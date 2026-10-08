@@ -33,5 +33,5 @@ a auditoria de segurança completa. Dependências devem ser revistas a cada etap
 com pins atualizados somente junto de testes e relatório de compatibilidade.
 
 Git remote: https://github.com/tpklge/PDVeVENDAS.git. Foi encontrado vazio pelo Git.
-GitHub CLI sem autenticação nesta sessão; o push será tentado pelo Git normal.
+GitHub CLI sem autenticação nesta sessão; o Git normal publicou a branch com sucesso.
 Nunca imprimir tokens nem executar force push. Credenciais/backup não pertencem ao Git.

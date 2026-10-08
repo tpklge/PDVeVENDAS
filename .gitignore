@@ -13,3 +13,4 @@ firmware/sdkconfig
 firmware/managed_components/
 .DS_Store
 firmware/sdkconfig.old
+dist/

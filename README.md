@@ -26,7 +26,8 @@ idf.py -p PORTA_DO_TAB5 flash monitor
 
 Consulte [desenvolvimento](docs/development.md), [hardware](docs/hardware.md),
 [arquitetura](docs/architecture.md), [roteiro](docs/roadmap.md) e
-[relatório da etapa](docs/releases/v0.1.0.md).
+[relatório da etapa](docs/releases/v0.1.0.md) e
+[roteiro de homologação física](docs/platform-validation.md).
 
 Código original licenciado sob MIT. Dependências mantêm suas próprias licenças.
 Não queimar eFuses nem ativar segurança irreversível durante desenvolvimento.
