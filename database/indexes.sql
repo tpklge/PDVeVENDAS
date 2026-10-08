@@ -1,0 +1,2 @@
+-- Índices e constraints fazem parte de schema.sql e V001__initial.sql.
+-- Não executar CREATE INDEX novamente.

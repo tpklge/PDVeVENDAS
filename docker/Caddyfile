@@ -1,0 +1,30 @@
+{
+    email {$ACME_EMAIL}
+    admin off
+}
+{$API_DOMAIN} {
+    tls {
+        protocols tls1.2 tls1.3
+    }
+    request_body {
+        max_size 64KB
+    }
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options nosniff
+        -Server
+    }
+    log {
+        output stdout
+        format filter {
+            wrap json
+            fields {
+                request delete
+                resp_headers delete
+            }
+        }
+    }
+    # Manter somente status, duração e tamanho; sem URL, IP ou cabeçalhos.
+    # A rotação do stdout é feita pelo Docker.
+    reverse_proxy api:8000
+}

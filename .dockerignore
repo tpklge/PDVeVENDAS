@@ -1,0 +1,7 @@
+.git
+.venv
+docs/private
+docker/secrets
+docker/backups
+**/__pycache__
+**/.pytest_cache
