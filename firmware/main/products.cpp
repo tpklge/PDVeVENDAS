@@ -146,14 +146,14 @@ void products_open(const char* permissions,bool light_value){
     xQueueReset(queue);xSemaphoreTake(mutex,portMAX_DELAY);view.mode=Mode::List;view.count=0;view.total=0;view.page=0;xSemaphoreGive(mutex);
     cancel_requested.store(false);light=light_value;visible=true;drawn=0;lv_obj_set_style_bg_color(root,lv_color_hex(light?0xf1f5f9:0x111827),0);theme_tree(root);lv_obj_remove_flag(root,LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_style_bg_color(form,lv_color_hex(light?0xffffff:0x1e293b),0);lv_obj_set_style_text_color(keyboard,lv_color_hex(light?0x0f172a:0xf8fafc),LV_PART_ITEMS);lv_obj_set_style_bg_color(keyboard,lv_color_hex(light?0xe2e8f0:0x334155),LV_PART_ITEMS);
-    queue_command(Action::Browse);
+    publish("Carregando produtos...",true);queue_command(Action::Browse);products_render();
 }
 void products_hide(){visible=false;cancel_requested.store(true);if(queue)xQueueReset(queue);if(root)lv_obj_add_flag(root,LV_OBJ_FLAG_HIDDEN);}
 void products_render(){
     if(!visible){return;}
     static View next;xSemaphoreTake(mutex,portMAX_DELAY);next=view;xSemaphoreGive(mutex);if(next.serial==drawn)return;
     bool rebuild=drawn==0 || !next.busy;drawn=next.serial;lv_label_set_text(message,next.message);
-    for(auto* obj:buttons){if(next.busy)lv_obj_add_state(obj,LV_STATE_DISABLED);else lv_obj_remove_state(obj,LV_STATE_DISABLED);}
+    for(unsigned i=0;i<6;++i){if(next.busy&&i!=5)lv_obj_add_state(buttons[i],LV_STATE_DISABLED);else lv_obj_remove_state(buttons[i],LV_STATE_DISABLED);}
     if(!rebuild)return;
     lv_group_remove_all_objs(group);lv_group_set_default(group);for(auto* input=lv_indev_get_next(nullptr);input;input=lv_indev_get_next(input))if(lv_indev_get_type(input)==LV_INDEV_TYPE_KEYPAD)lv_indev_set_group(input,group);
     auto* filter=static_cast<lv_obj_t*>(lv_obj_get_user_data(query));bool listing=next.mode==Mode::List,editing=next.mode==Mode::Form;
