@@ -1,5 +1,12 @@
 # Histórico
 
+## 0.1.1 — fonte pt-BR
+
+- Corrige glifos ausentes nas fontes: Latin-1 para ç/acentos nos tamanhos 20 e 28.
+- Tema e widgets usam fonte pt-BR; símbolos LVGL mantidos por fallback.
+- Linha de conferência de acentos na tela de entrada.
+- Instalação e três telas testadas pelo usuário; revisão visual desta correção pendente.
+
 ## 0.1.0 — plataforma (candidata; validação física pendente)
 
 - Projeto ESP-IDF 5.4.4 para ESP32-P4 e BSP oficial fixado.

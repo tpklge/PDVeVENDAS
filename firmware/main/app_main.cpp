@@ -9,7 +9,7 @@ extern "C" void app_main() {
     static tab5::PlatformStatus status;
     esp_chip_info_t chip{};
     esp_chip_info(&chip);
-    ESP_LOGI("tab5_erp", "TAB5 ERP v0.1.0 | ESP-IDF %s | núcleos %d", esp_get_idf_version(), chip.cores);
+    ESP_LOGI("tab5_erp", "TAB5 ERP v0.1.1 | ESP-IDF %s | núcleos %d", esp_get_idf_version(), chip.cores);
     // Do not erase NVS automatically: future credentials/configuration must survive errors.
     ESP_ERROR_CHECK(nvs_flash_init());
     lv_display_t* display = bsp_display_start();

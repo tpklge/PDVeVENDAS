@@ -1,6 +1,8 @@
 # Homologação física da plataforma v0.1.0
 
-Esta lista ainda não foi executada. O Tab5 não apareceu nas portas USB do host.
+O usuário informou instalação bem-sucedida e funcionamento das três telas em
+08/10/2026. A fonte pt-BR foi corrigida na v0.1.1; a conferência visual desta
+revisão e os ensaios detalhados abaixo ainda não foram relatados.
 Anotar revisão da placa, painel/touch, versão do teclado, modelo/capacidade do SD,
 hash do BIN, alimentação e log serial em cada execução.
 

@@ -1,4 +1,5 @@
 #include "platform.hpp"
+#include "erp_fonts.h"
 #include "esp_heap_caps.h"
 #include "esp_timer.h"
 #include <cstdio>
@@ -74,12 +75,16 @@ void refresh(lv_timer_t*) {
 }
 void create_platform_ui(PlatformStatus& status, lv_display_t* display) {
     state = &status;
+    auto theme = lv_theme_default_init(display, lv_palette_main(LV_PALETTE_BLUE),
+        lv_palette_main(LV_PALETTE_TEAL), true, &erp_font_pt_20);
+    lv_display_set_theme(display, theme);
     auto screen = lv_display_get_screen_active(display);
+    lv_obj_set_style_text_font(screen, &erp_font_pt_20, 0);
     lv_obj_set_style_bg_color(screen, lv_color_hex(0x111827), 0);
     lv_obj_set_style_text_color(screen, lv_color_hex(0xe5e7eb), 0);
     auto title = lv_label_create(screen);
     lv_label_set_text(title, "TAB5 ERP | Plataforma e diagnóstico");
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_28, 0);
+    lv_obj_set_style_text_font(title, &erp_font_pt_28, 0);
     lv_obj_set_pos(title, 32, 24);
     group = lv_group_create();
     lv_group_set_default(group);
@@ -106,9 +111,9 @@ void create_platform_ui(PlatformStatus& status, lv_display_t* display) {
     storage_label = lv_label_create(pages[2]);
     lv_obj_set_width(storage_label, 1160);
     auto instructions = lv_label_create(pages[1]);
-    lv_label_set_text(instructions, "Teste de letras, números, símbolos e navegação. Não digite senhas nesta tela.");
+    lv_label_set_text(instructions, "Teste de letras, números, símbolos e navegação. Não digite senhas nesta tela.\nAcentos: ação, café, órgão, maçã, Ç, Ã, Ê, Ó, Ú");
     input_text = lv_textarea_create(pages[1]);
-    lv_obj_set_pos(input_text, 0, 48);
+    lv_obj_set_pos(input_text, 0, 64);
     lv_obj_set_size(input_text, 1140, 96);
     lv_textarea_set_max_length(input_text, 128);
     lv_textarea_set_placeholder_text(input_text, "Digite aqui...");
@@ -118,7 +123,7 @@ void create_platform_ui(PlatformStatus& status, lv_display_t* display) {
         virtual_keyboard = lv_keyboard_create(pages[1]);
         lv_keyboard_set_textarea(virtual_keyboard, input_text);
         lv_obj_set_size(virtual_keyboard, 1140, 260);
-        lv_obj_set_pos(virtual_keyboard, 0, 168);
+        lv_obj_set_pos(virtual_keyboard, 0, 184);
     }
     if (status.keyboard) {
         auto keyboard = lv_indev_create();
@@ -128,7 +133,7 @@ void create_platform_ui(PlatformStatus& status, lv_display_t* display) {
         lv_indev_set_display(keyboard, display);
     }
     auto footer = lv_label_create(screen);
-    lv_label_set_text(footer, "v0.1.0 | Desenvolvimento | Nenhuma venda é realizada nesta etapa");
+    lv_label_set_text(footer, "v0.1.1 | Desenvolvimento | Nenhuma venda é realizada nesta etapa");
     lv_obj_set_pos(footer, 32, 676);
     select_page(0);
     refresh(nullptr);

@@ -1,3 +1,3 @@
 cmake_minimum_required(VERSION 3.16)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(tab5_erp VERSION 0.1.0)
+project(tab5_erp VERSION 0.1.1)

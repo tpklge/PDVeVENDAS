@@ -3,9 +3,9 @@
 ERP comercial e PDV nativo para M5Stack Tab5, em desenvolvimento incremental.
 Especificação integral: [docs/REQUISITOS_RECEBIDOS.md](docs/REQUISITOS_RECEBIDOS.md).
 
-A etapa atual é **v0.1.0 — plataforma Tab5**, na branch `release/v0.1.0-platform`.
+A etapa atual é **v0.1.1 — plataforma Tab5**, na branch `release/v0.1.1-platform`.
 Display/LVGL, teclado I²C, touchscreen, menu de diagnóstico e montagem não destrutiva
-do microSD estão implementados. A execução no dispositivo ainda exige homologação.
+do microSD estão implementados. O usuário confirmou instalação e as três telas no dispositivo; esta revisão corrige os acentos.
 Esta etapa não registra vendas, não emite documentos fiscais e não possui login.
 
 O servidor futuro será instalado **na nuvem OCI Ampere ARM64**. Docker não precisa
