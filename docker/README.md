@@ -64,7 +64,8 @@ Para restauração, usar uma instância dedicada vazia, com as mesmas credenciai
 SQL e schema compatível. O script exige `--confirm-replace`, interrompe a API e
 importa o dump; não remove tabelas extras existentes. Não restaurar sobre uma
 base divergente de produção. Executar migrações, validar e reativar a API após
-restaurar. Backup/restauração real no MariaDB ainda precisam de validação.
+restaurar. Backup/restauração em MariaDB real passaram no CI; a execução final
+no OCI ainda precisa ser registrada.
 
 No Portainer, o editor de stack sozinho não contém os arquivos locais nem o
 contexto de build. Use o pacote completo no servidor e os comandos acima, ou

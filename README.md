@@ -3,17 +3,23 @@
 ERP comercial e PDV nativo para M5Stack Tab5, em desenvolvimento incremental.
 Especificação integral: [docs/REQUISITOS_RECEBIDOS.md](docs/REQUISITOS_RECEBIDOS.md).
 
-A etapa atual é **v0.1.1 — plataforma Tab5**, na branch `release/v0.1.1-platform`.
+A etapa atual é **v0.2.0 — infraestrutura**, na branch `release/v0.2.0-database`.
+API/MariaDB e HTTPS via Traefik existente foram comprovados pelo usuário no OCI.
+CI com MariaDB real aprovou persistência e restauração em AMD64/ARM64; falta a
+verificação final no OCI para aprovação da etapa. Ver [stack](docker/README.md)
+e [relatório](docs/releases/v0.2.0.md).
+
+O firmware permanece em **v0.1.1 — plataforma Tab5**.
 Display/LVGL, teclado I²C, touchscreen, menu de diagnóstico e montagem não destrutiva
 do microSD estão implementados. O usuário confirmou instalação e as três telas no dispositivo; esta revisão corrige os acentos.
 Esta etapa não registra vendas, não emite documentos fiscais e não possui login.
 
-O servidor futuro será instalado **na nuvem OCI Ampere ARM64**. Docker não precisa
-ser instalado neste computador para desenvolver o firmware. API/MariaDB/Caddy
-pertencem à etapa v0.2.0 e autenticação à v0.3.0.
+O servidor está **na nuvem OCI Ampere ARM64**. Docker não precisa
+ser instalado neste computador para desenvolver o firmware. API/MariaDB/Traefik
+pertencem à etapa v0.2.0 e o assistente/login no Tab5 à v0.3.0.
 
-Preparação antecipada do backend foi preservada apenas na branch local
-`work/backend-preparation`, commit `d25cc17`. Não faz parte da release de plataforma.
+Preparação antecipada original preservada na branch local
+`work/backend-preparation`, commit `d25cc17`; sua fundação agora integra esta etapa.
 
 ```sh
 cd firmware
