@@ -50,7 +50,9 @@ def test_validation_duplicates_and_categories(environment):
     categories = client.get("/api/v1/categories", headers=auth).json()["items"]
     assert categories[0]["name"] == "Bebidas"
     assert client.put(f"/api/v1/categories/{categories[0]['id']}", headers=auth, json={"name": "Mercearia"}).status_code == 200
-    assert client.get("/api/v1/products", headers=auth).json()["items"][0]["category"] == "Mercearia"
+    renamed = client.get("/api/v1/products", headers=auth).json()["items"][0]
+    assert renamed["category"] == "Mercearia" and renamed["version"] == 2
+    assert client.put(f"/api/v1/products/{renamed['id']}", headers=auth, json=product(version=1)).status_code == 409
 
 
 def test_snapshot_revision_rbac_and_pagination(environment):

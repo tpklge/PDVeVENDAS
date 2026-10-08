@@ -85,7 +85,7 @@ bool browse(const std::string& path,const Command& cmd,bool online){
         cJSON_Delete(data);
     }
     ok=!ferror(file)&&ok;fclose(file);if(!ok){publish("Cache corrompido. Atualize antes de consultar.");return false;}
-    char date[40]="sem data";tm when{};if(saved && localtime_r(&saved,&when))strftime(date,sizeof(date),"%d/%m/%Y %H:%M UTC",&when);
+    char date[40]="sem data";tm when{};if(saved && gmtime_r(&saved,&when))strftime(date,sizeof(date),"%d/%m/%Y %H:%M UTC",&when);
     snprintf(next.message,sizeof(next.message),"%s | Cache de %s | Revisão %u | Página %u | %u resultados",online?"Consulta local":"Sem rede: consulta local",date,revision,cmd.page+1,next.total);
     xSemaphoreTake(mutex,portMAX_DELAY);next.serial=view.serial+1;view=next;xSemaphoreGive(mutex);return true;
 }

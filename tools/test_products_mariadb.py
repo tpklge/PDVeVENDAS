@@ -40,7 +40,12 @@ updated = call("PUT", f"/api/v1/products/{product['id']}", {**body, "version": 1
 assert updated["version"] == 2 and updated["sale_price"] == "145.90"
 call("PUT", f"/api/v1/products/{product['id']}", {**body, "version": 1}, token, 409)
 call("GET", f"/api/v1/products?revision={snapshot['revision']}", token=token, expected=409)
-call("DELETE", f"/api/v1/products/{product['id']}?version=2", token=token, expected=204)
+category = call("GET", "/api/v1/categories", token=token)["items"][0]
+call("PUT", f"/api/v1/categories/{category['id']}", {"name": "CI Categoria renomeada"}, token)
+renamed = call("GET", f"/api/v1/products/{product['id']}", token=token)
+assert renamed["version"] == 3 and renamed["category"] == "CI Categoria renomeada"
+call("DELETE", f"/api/v1/products/{product['id']}?version=2", token=token, expected=409)
+call("DELETE", f"/api/v1/products/{product['id']}?version=3", token=token, expected=204)
 assert not call("GET", "/api/v1/products", token=token)["items"]
 assert call("GET", "/api/v1/products?include_inactive=true", token=token)["items"][0]["active"] is False
 print("PASS: MariaDB real — preços decimais, CRUD, duplicidade, revisão, conflito e inativação.")

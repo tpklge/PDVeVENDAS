@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import Field, field_validator, model_validator
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from .dependencies import Db, Input, allowed
 from .models import AuditLog, CatalogState, Category, Product, User, utcnow
@@ -150,6 +150,7 @@ def rename_category(category_id: int, body: CategoryInput, user: Edit, db: Db, r
     if not category:
         raise HTTPException(404, "Categoria não encontrada.")
     category.name = body.name
+    db.execute(update(Product).where(Product.category_id == category.id).values(version=Product.version + 1, updated_at=utcnow()))
     state.revision += 1
     record(db, request, user, "categories.update", "categories", category.id)
     commit(db)
