@@ -22,6 +22,7 @@ ao chat nem publicar. O firmware nunca recebe credenciais SQL.
 1. Instalar o firmware 0.3.0 mantendo as partições existentes de 16 MiB.
 2. O autoteste verifica PBKDF2 contra um vetor conhecido, AES-GCM roundtrip e
    rejeição de tag adulterada; falha bloqueia o provisionamento.
+   Aguardar alguns segundos para a primeira tela de acesso enquanto ele executa.
 3. Criar admin-local. Preferir a senha `local_admin_password` reservada no relatório
    privado do servidor, digitando-a no lugar da sugestão. Alternativamente guardar
    a senha de 24 caracteres sugerida pelo Tab5 e registrar em relatório privado:
