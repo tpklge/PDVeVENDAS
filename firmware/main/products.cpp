@@ -102,7 +102,8 @@ void queue_command(Action action,unsigned page=0,int id=0){
     }
     if(xQueueSend(queue,&cmd,0)!=pdTRUE)lv_label_set_text(message,"Operação em andamento. Aguarde.");
 }
-void focused(lv_event_t* event){lv_obj_remove_flag(keyboard,LV_OBJ_FLAG_HIDDEN);lv_keyboard_set_textarea(keyboard,lv_event_get_target_obj(event));lv_obj_scroll_to_view(lv_event_get_target_obj(event),LV_ANIM_OFF);}
+void focused(lv_event_t* event){lv_keyboard_set_textarea(keyboard,lv_event_get_target_obj(event));lv_obj_scroll_to_view(lv_event_get_target_obj(event),LV_ANIM_OFF);}
+void touched(lv_event_t* event){lv_obj_remove_flag(keyboard,LV_OBJ_FLAG_HIDDEN);focused(event);}
 void row_event(lv_event_t* event){queue_command(Action::Select,0,static_cast<int>(reinterpret_cast<intptr_t>(lv_event_get_user_data(event))));}
 void key_event(lv_event_t* event){auto key=lv_event_get_key(event);if(key==LV_KEY_ESC){visible=false;cancel_requested.store(true);lv_obj_add_flag(root,LV_OBJ_FLAG_HIDDEN);return_home();}}
 void button_event(lv_event_t* event){
@@ -130,13 +131,13 @@ void products_create(lv_display_t* display,void (*home)()){
     auto* filter=lv_button_create(root);lv_obj_set_pos(filter,1050,100);lv_obj_set_size(filter,160,52);lv_label_set_text(lv_label_create(filter),"Filtrar");lv_obj_center(lv_obj_get_child(filter,0));lv_obj_add_event_cb(filter,filter_event,LV_EVENT_CLICKED,nullptr);
     for(unsigned i=0;i<page_size;++i){rows[i]=lv_button_create(root);lv_obj_set_pos(rows[i],8,174+i*42);lv_obj_set_size(rows[i],1204,38);auto* label=lv_label_create(rows[i]);lv_obj_set_width(label,1168);lv_label_set_long_mode(label,LV_LABEL_LONG_DOT);lv_obj_center(label);lv_obj_add_flag(rows[i],LV_OBJ_FLAG_HIDDEN);lv_obj_add_event_cb(rows[i],key_event,LV_EVENT_KEY,nullptr);}
     form=lv_obj_create(root);lv_obj_set_pos(form,8,104);lv_obj_set_size(form,1204,240);lv_obj_set_style_pad_all(form,8,0);
-    for(unsigned i=0;i<field_count;++i){unsigned col=i%3,row=i/3;auto* label=lv_label_create(form);lv_obj_set_pos(label,col*390,row*80);lv_label_set_text(label,labels[i]);inputs[i]=lv_textarea_create(form);lv_obj_set_pos(inputs[i],col*390,row*80+26);lv_obj_set_size(inputs[i],374,48);lv_textarea_set_one_line(inputs[i],true);constexpr unsigned lengths[]={32,14,120,500,80,8,13,13,16,16,16,8,7,1};lv_textarea_set_max_length(inputs[i],lengths[i]);lv_obj_add_event_cb(inputs[i],focused,LV_EVENT_FOCUSED,nullptr);lv_obj_add_event_cb(inputs[i],key_event,LV_EVENT_KEY,nullptr);}
+    for(unsigned i=0;i<field_count;++i){unsigned col=i%3,row=i/3;auto* label=lv_label_create(form);lv_obj_set_pos(label,col*390,row*80);lv_label_set_text(label,labels[i]);inputs[i]=lv_textarea_create(form);lv_obj_set_pos(inputs[i],col*390,row*80+26);lv_obj_set_size(inputs[i],374,48);lv_textarea_set_one_line(inputs[i],true);constexpr unsigned lengths[]={32,14,120,500,80,8,13,13,16,16,16,8,7,1};lv_textarea_set_max_length(inputs[i],lengths[i]);lv_obj_add_event_cb(inputs[i],focused,LV_EVENT_FOCUSED,nullptr);lv_obj_add_event_cb(inputs[i],touched,LV_EVENT_CLICKED,nullptr);lv_obj_add_event_cb(inputs[i],key_event,LV_EVENT_KEY,nullptr);}
     active=lv_checkbox_create(form);lv_obj_set_pos(active,2*390,4*80+30);lv_checkbox_set_text(active,"Ativo");lv_obj_add_flag(form,LV_OBJ_FLAG_HIDDEN);
     for(unsigned i=0;i<6;++i){buttons[i]=lv_button_create(root);lv_obj_set_pos(buttons[i],8+i*202,550);lv_obj_set_size(buttons[i],190,48);auto* label=lv_label_create(buttons[i]);lv_obj_center(label);lv_obj_add_event_cb(buttons[i],button_event,LV_EVENT_CLICKED,reinterpret_cast<void*>(static_cast<uintptr_t>(i)));lv_obj_add_event_cb(buttons[i],key_event,LV_EVENT_KEY,nullptr);}
     keyboard=lv_keyboard_create(root);lv_obj_set_pos(keyboard,8,416);lv_obj_set_size(keyboard,1204,250);lv_obj_add_flag(keyboard,LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_event_cb(keyboard,[](lv_event_t*){lv_obj_add_flag(keyboard,LV_OBJ_FLAG_HIDDEN);},LV_EVENT_READY,nullptr);
     lv_obj_add_event_cb(keyboard,[](lv_event_t*){lv_obj_add_flag(keyboard,LV_OBJ_FLAG_HIDDEN);},LV_EVENT_CANCEL,nullptr);
-    lv_obj_add_event_cb(query,focused,LV_EVENT_FOCUSED,nullptr);lv_obj_add_event_cb(category,focused,LV_EVENT_FOCUSED,nullptr);
+    lv_obj_add_event_cb(query,focused,LV_EVENT_FOCUSED,nullptr);lv_obj_add_event_cb(category,focused,LV_EVENT_FOCUSED,nullptr);lv_obj_add_event_cb(query,touched,LV_EVENT_CLICKED,nullptr);lv_obj_add_event_cb(category,touched,LV_EVENT_CLICKED,nullptr);
     lv_obj_add_flag(root,LV_OBJ_FLAG_HIDDEN);lv_timer_create([](lv_timer_t*){products_render();},100,nullptr);
     // Keep filter reachable after list/form group rebuilding.
     lv_obj_set_user_data(query,filter);
