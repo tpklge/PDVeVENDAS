@@ -15,6 +15,9 @@ def test_network_boundary():
     assert services["api"]["environment"]["DB_USER"] != services["migrate"]["environment"]["DB_USER"]
     assert services["api"]["secrets"] == ["db_app_password"]
     assert services["mariadb"]["networks"] == ["backend"]
+    # Child file mounts need writable parent mountpoints during OCI setup.
+    assert not any(mount.split(":")[1] == "/docker-entrypoint-initdb.d"
+                   for mount in services["mariadb"]["volumes"])
     assert services["mariadb"]["labels"]["traefik.enable"] == "false"
     assert services["migrate"]["labels"]["traefik.enable"] == "false"
     assert config["networks"]["traefik"]["external"]
