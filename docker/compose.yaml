@@ -75,7 +75,7 @@ services:
       traefik.http.routers.tab5-api.rule: "Host(`${API_DOMAIN:-tab5api.ampere.diadiatech.com.br}`)"
       traefik.http.routers.tab5-api.entrypoints: "${TRAEFIK_HTTPS_ENTRYPOINT:-websecure}"
       traefik.http.routers.tab5-api.tls: "true"
-      traefik.http.routers.tab5-api.tls.certresolver: "${TRAEFIK_CERTRESOLVER:-letsecnrypt}"
+      traefik.http.routers.tab5-api.tls.certresolver: "${TRAEFIK_CERTRESOLVER:-letsencrypt}"
       traefik.http.routers.tab5-api.service: tab5-api
       traefik.http.services.tab5-api.loadbalancer.server.port: "8000"
       traefik.http.services.tab5-api.loadbalancer.server.scheme: http

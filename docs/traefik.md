@@ -18,7 +18,7 @@ provider Swarm e às labels de serviço.
 
 Rede externa confirmada pelo usuário: `meshcentral_proxy` (Portainer).
 Resolver informado pelo usuário no valor da label
-`traefik.http.routers.traefik-dashboard.tls.certresolver`: `letsecnrypt`.
+`traefik.http.routers.traefik-dashboard.tls.certresolver`: `letsencrypt`.
 Preservar essa grafia, pois o identificador deve coincidir com a configuração
 existente do Traefik.
 Entrypoint HTTPS definido pelo usuário: `websecure`. Os parâmetros estão

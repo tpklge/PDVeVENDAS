@@ -20,7 +20,7 @@ curl --fail --show-error https://tab5api.ampere.diadiatech.com.br/health/ready
 
 O DNS deve apontar esse nome para o servidor atendido pelo Traefik. Conferir que
 o Traefik usa o provider Docker, a rede `meshcentral_proxy`, o entrypoint
-`websecure` e o resolver `letsecnrypt` (grafia informada pelo usuário).
+`websecure` e o resolver `letsencrypt` (grafia informada pelo usuário).
 Os certificados continuam sob responsabilidade do Traefik existente.
 
 Fluxo de inicialização:

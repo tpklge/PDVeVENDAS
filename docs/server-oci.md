@@ -11,7 +11,7 @@ Informações fornecidas pelo usuário em 08/10/2026:
 - Servidor: ampere.diadiatech.com.br.
 - URL da API: https://tab5api.ampere.diadiatech.com.br.
 - Rede externa compartilhada com Traefik: meshcentral_proxy.
-- Resolver ACME informado: letsecnrypt (grafia preservada).
+- Resolver ACME informado: letsencrypt (grafia preservada).
 - Entrypoint HTTPS definido: websecure.
 - Repositório: https://github.com/tpklge/PDVeVENDAS.
 
