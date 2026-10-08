@@ -3951,4 +3951,3 @@ lv_font_t erp_font_pt_28 = {
 
 
 #endif /*#if ERP_FONT_PT_28*/
-

@@ -2494,4 +2494,3 @@ lv_font_t erp_font_pt_20 = {
 
 
 #endif /*#if ERP_FONT_PT_20*/
-
