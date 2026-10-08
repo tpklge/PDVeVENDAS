@@ -72,7 +72,17 @@ configure implantação pelo repositório com suporte a build e disponibilize os
 arquivos de secrets e mounts no host do Docker. Este Compose é para Docker
 Compose, não Swarm.
 
-Validação local: 10 testes da API/fundação aprovados usando SQLite. Docker não
-foi executado neste Mac e a stack não foi implantada no servidor nesta sessão.
+Validação local: 10 testes da API/fundação aprovados usando SQLite. CI com Docker
+e MariaDB reais passou em AMD64 e ARM64, incluindo persistência e restauração.
+O usuário comprovou implantação e HTTPS válido no OCI; falta a execução final
+do script abaixo no servidor. Ele causa breve interrupção ao recriar os containers
+e preserva o volume. Restaura o backup em banco temporário sem rede, compara
+schema/dados, remove os recursos temporários e preserva o backup gerado.
+
+```sh
+bash docker/scripts/validate-release.sh
+```
+
+Docker não foi executado neste Mac.
 O arquivo `compose.yaml` é completo; não é necessário acrescentar o complemento
 anterior `compose.traefik.yaml`.
