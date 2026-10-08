@@ -4,6 +4,7 @@
 #include "esp_chip_info.h"
 #include "esp_log.h"
 #include "esp_system.h"
+#include "esp_heap_caps.h"
 
 extern "C" void app_main() {
     static tab5::PlatformStatus status;
@@ -25,8 +26,22 @@ extern "C" void app_main() {
     const auto sd = tab5::storage_start(status);
     if (sd != ESP_OK) ESP_LOGW("tab5_erp", "microSD indisponível: %s", esp_err_to_name(sd));
     if (bsp_display_lock(5000)) {
+        // Product forms exceed LVGL's default 64 KiB pool. Keep the extra
+        // UI storage in PSRAM, preserving internal RAM for DMA and Wi-Fi.
+        constexpr size_t ui_pool_bytes = 512 * 1024;
+        void* ui_pool = heap_caps_malloc(ui_pool_bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+        if (!ui_pool || !lv_mem_add_pool(ui_pool, ui_pool_bytes)) {
+            heap_caps_free(ui_pool);
+            bsp_display_unlock();
+            ESP_LOGE("tab5_erp", "Falha ao reservar memória PSRAM para a interface");
+            return;
+        }
+        ESP_LOGI("tab5_erp", "LVGL: pool adicional de %u KiB na PSRAM", unsigned(ui_pool_bytes / 1024));
         tab5::create_platform_ui(status, display);
         tab5::authentication_start(display,status.sd_mounted && status.sd_writable);
+        lv_mem_monitor_t ui_memory{};
+        lv_mem_monitor(&ui_memory);
+        ESP_LOGI("tab5_erp", "LVGL: %u bytes livres após criar a interface", unsigned(ui_memory.free_size));
         bsp_display_unlock();
     } else {
         ESP_LOGE("tab5_erp", "Não foi possível criar a interface");
