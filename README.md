@@ -3,7 +3,7 @@
 ERP comercial e PDV nativo para M5Stack Tab5, em desenvolvimento incremental.
 Especificação integral: [docs/REQUISITOS_RECEBIDOS.md](docs/REQUISITOS_RECEBIDOS.md).
 
-A etapa atual é **v0.3.1 — autenticação, Wi-Fi e configurações no microSD (candidata)**, na branch
+A etapa atual é **v0.3.2 — autenticação e interface (candidata)**, na branch
 `release/v0.3.0-authentication`. Ver [provisionamento/testes](docs/authentication.md).
 O firmware tem primeiro boot, desbloqueio local, configuração criptografada,
 Wi-Fi e login ERP; a validação física desta etapa ainda está pendente.
@@ -14,7 +14,7 @@ CI com MariaDB real aprovou persistência e restauração em AMD64/ARM64; a
 verificação final no OCI também passou. Etapa aprovada. Ver [stack](docker/README.md)
 e [relatório](docs/releases/v0.2.0.md).
 
-O firmware candidato é **v0.3.1**, mantendo a plataforma validada em v0.1.1.
+O firmware candidato é **v0.3.2**, mantendo a plataforma validada em v0.1.1.
 Display/LVGL, teclado I²C, touchscreen, menu de diagnóstico e montagem não destrutiva
 do microSD estão implementados. O usuário confirmou instalação e as três telas no dispositivo; esta revisão corrige os acentos.
 Esta etapa não registra vendas e não emite documentos fiscais.

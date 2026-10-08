@@ -1,5 +1,11 @@
 # Histórico
 
+## 0.3.2 — senha ERP simplificada (candidata)
+
+- ERP aceita 8 caracteres, sem requisitos de composição.
+- Troca pelo terminal, sem eco, revoga sessões e dispensa repetir a senha inicial.
+- Firmware informa falhas de sessão, validação e conexão na troca de senha.
+
 ## 0.3.1 — Wi-Fi, interface e microSD (candidata)
 
 - Autoteste de boot mais rápido; criptografia das configurações preservada.

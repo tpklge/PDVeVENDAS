@@ -97,3 +97,32 @@ def test_validation_does_not_echo_password(environment):
     assert result.status_code == 422
     assert "SENSITIVE" not in result.text
     assert client.get("/api/v1/users").status_code == 401
+
+
+def test_simple_password_policy_and_revocation(environment):
+    client, _ = environment
+    token = login(client).json()["access_token"]
+    auth = headers(token)
+    assert client.post("/api/v1/auth/change-password", headers=auth,
+        json={"current_password": PASSWORD, "new_password": "1234567"}).status_code == 422
+    assert client.post("/api/v1/auth/change-password", headers=auth,
+        json={"current_password": PASSWORD, "new_password": "12345678"}).status_code == 204
+    assert client.get("/api/v1/auth/me", headers=auth).status_code == 401
+    assert login(client, password="12345678").status_code == 200
+
+
+def test_server_password_reset_revokes_without_echo(environment, monkeypatch, capsys):
+    from app import cli
+    client, factory = environment
+    token = login(client).json()["access_token"]
+    monkeypatch.setattr(cli, "SessionFactory", factory)
+    monkeypatch.setattr(cli.getpass, "getpass", lambda _: "12345678")
+    monkeypatch.setattr(cli, "__name__", "app.cli")
+    import sys
+    monkeypatch.setattr(sys, "argv", ["cli", "reset-password", "--username", "admin"])
+    cli.main()
+    assert "12345678" not in capsys.readouterr().out
+    assert client.get("/api/v1/auth/me", headers=headers(token)).status_code == 401
+    result = login(client, password="12345678")
+    assert result.status_code == 200
+    assert result.json()["must_change_password"] is False

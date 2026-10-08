@@ -39,7 +39,7 @@ pelo menos 4 caracteres; é independente da senha ERP.
 5. A conexão aguarda DHCP, sincroniza hora por NTP, valida a cadeia/hostname TLS,
    testa health ready e compatibilidade da API. Sem horário confiável, TLS falha.
 6. Entrar com administrador ERP; trocar a senha inicial por uma diferente com
-   pelo menos 20 caracteres e entrar novamente. A API revoga sessões na troca.
+   pelo menos 8 caracteres e entrar novamente. A API revoga sessões na troca.
 7. A primeira instalação só é marcada concluída após login com permissão
    `users.create`, sem troca obrigatória pendente e configuração persistida.
 8. Conferir usuário, dispositivo, perfis e permissões na área de sessão (rolável).
@@ -119,3 +119,6 @@ da etapa e tag 0.3.1 dependem dos testes no Tab5; não extrapolar compilação p
 funcionamento físico.
 
 Referência de versões/pinos: [exemplo oficial M5Stack](https://github.com/m5stack/M5Tab5-UserDemo/tree/main/platforms/tab5).
+
+Para substituir a senha ERP extensa pelo terminal, consultar
+[procedimento 0.3.2](releases/v0.3.2.md).

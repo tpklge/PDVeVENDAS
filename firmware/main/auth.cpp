@@ -298,7 +298,10 @@ void worker(void*) {
         }else if(cmd.action==Action::Password){
             auto body=body_for("current_password",cmd.fields[0],"new_password",cmd.fields[1]);Response response;
             int code=request("/api/v1/auth/change-password",body.c_str(),response,true);wipe(body.data(),body.size());
-            if(code==204){clear_session();publish(Page::Login,"Senha alterada e sessões revogadas. Entre novamente.");}else publish(Page::Password,"Não foi possível alterar. Confira senha atual e nova senha (20 caracteres).");
+            if(code==204){clear_session();publish(Page::Login,"Senha alterada e sessões revogadas. Entre novamente.");}else if(code==401)publish(Page::Password,"Senha atual incorreta ou sessão expirada. Confira a senha ou entre novamente.");
+            else if(code==422)publish(Page::Password,"Nova senha inválida. Use pelo menos 8 caracteres e uma senha diferente da atual. Confira se a API foi atualizada.");
+            else if(code<=0)publish(Page::Password,"Sem resposta da API. Confira a rede e tente novamente.");
+            else publish(Page::Password,"API recusou a alteração. Tente entrar novamente.");
         }else if(cmd.action==Action::Logout){Response response;int code=request("/api/v1/auth/logout","",response,true);clear_session();publish(Page::Login,code==204?"Sessão encerrada.":"Sessão removida deste dispositivo; revogação remota não confirmada.");}
         else if(cmd.action==Action::LocalPassword){
             uint8_t candidate[32]{};Settings opened{};
@@ -355,7 +358,7 @@ void render(lv_timer_t*) {
     case Page::Unlock:lv_label_set_text(heading,"TAB5 ERP | Desbloqueio local");field(0,"Senha do admin-local",true);button(0,"Desbloquear",Action::Unlock);break;
     case Page::Configure:lv_label_set_text(heading,"TAB5 ERP | Wi-Fi e servidor");field(0,"SSID",false);field(1,"Senha Wi-Fi",true);field(2,"URL HTTPS",false,"https://tab5api.ampere.diadiatech.com.br");button(0,"Salvar e conectar",Action::Save);button(1,"Pesquisar redes",Action::Scan);navigation(2,"Senha local",Page::LocalPassword);navigation(3,"Esquecer rede",Page::ConfirmForget);break;
     case Page::Login:lv_label_set_text(heading,"TAB5 ERP | Login ERP");field(0,"Usuário ERP",false);field(1,"Senha ERP",true);button(0,"Entrar",Action::Login);navigation(1,"Configurar rede",Page::Configure);button(2,"Bloquear",Action::Lock);break;
-    case Page::Password:lv_label_set_text(heading,"TAB5 ERP | Alterar senha inicial ERP");field(0,"Senha atual ERP",true);field(1,"Nova senha ERP",true);button(0,"Alterar senha ERP",Action::Password);button(1,"Sair",Action::Logout);break;
+    case Page::Password:lv_label_set_text(heading,"TAB5 ERP | Alterar senha inicial ERP");field(0,"Senha atual ERP",true);field(1,"Nova senha ERP (mínimo 8)",true);button(0,"Alterar senha ERP",Action::Password);button(1,"Sair",Action::Logout);break;
     case Page::Session:lv_label_set_text(heading,"TAB5 ERP | Sessão autenticada");button(0,"Sair",Action::Logout);navigation(1,"Alterar senha ERP",Page::Password);navigation(2,"Configurar rede",Page::Configure);button(3,"Bloquear",Action::Lock);break;
     case Page::LocalPassword:lv_label_set_text(heading,"TAB5 ERP | Alterar senha local");field(0,"Senha local atual",true);field(1,"Nova senha local",true);button(0,"Alterar senha local",Action::LocalPassword);navigation(1,"Voltar",Page::Configure);navigation(2,"Restaurar Tab5",Page::ConfirmReset);break;
     case Page::ConfirmForget:lv_label_set_text(heading,"Confirmar: esquecer a rede Wi-Fi?");button(0,"Confirmar exclusão",Action::Forget);navigation(1,"Cancelar",Page::Configure);break;
@@ -384,10 +387,18 @@ void authentication_start(lv_display_t* display,bool sd_writable){
     networks=lv_dropdown_create(panel);lv_obj_set_pos(networks,8,260);lv_obj_set_size(networks,288,28);lv_dropdown_set_options(networks,"Pesquise redes");lv_obj_add_event_cb(networks,selected_network,LV_EVENT_VALUE_CHANGED,nullptr);
     for(auto* input=lv_indev_get_next(nullptr);input;input=lv_indev_get_next(input))if(lv_indev_get_type(input)==LV_INDEV_TYPE_KEYPAD)lv_indev_set_group(input,input_group);
     lv_timer_create(render,100,nullptr);
-    auto style_button=[](lv_obj_t* button){lv_obj_set_style_bg_color(button,lv_color_hex(0xe2e8f0),LV_PART_MAIN);lv_obj_set_style_bg_color(button,lv_color_hex(0xcbd5e1),LV_PART_MAIN|LV_STATE_PRESSED);lv_obj_set_style_text_color(button,lv_color_hex(0x0f172a),LV_PART_MAIN);auto* text=lv_obj_get_child(button,0);lv_obj_set_style_text_color(text,lv_color_hex(0x0f172a),0);lv_obj_center(text);};
+    auto style_button=[](lv_obj_t* button){lv_obj_set_style_bg_color(button,lv_color_hex(0x334155),LV_PART_MAIN);lv_obj_set_style_bg_color(button,lv_color_hex(0x475569),LV_PART_MAIN|LV_STATE_PRESSED);lv_obj_set_style_text_color(button,lv_color_hex(0xf8fafc),LV_PART_MAIN);auto* text=lv_obj_get_child(button,0);lv_obj_set_style_text_color(text,lv_color_hex(0xf8fafc),0);lv_obj_center(text);};
     for(auto* button:buttons)style_button(button);
     style_button(reveal);style_button(diag);style_button(return_button);
-    lv_obj_set_style_bg_color(panel,lv_color_hex(0xf8fafc),0);lv_obj_set_style_text_color(panel,lv_color_hex(0x0f172a),0);
+    for(auto* field:fields){lv_obj_set_style_bg_color(field,lv_color_hex(0x1e293b),0);lv_obj_set_style_text_color(field,lv_color_hex(0xf8fafc),0);}
+    lv_obj_set_style_text_color(message,lv_color_hex(0xf8fafc),0);
+    lv_obj_set_style_bg_color(message_box,lv_color_hex(0x1e293b),0);
+    lv_obj_set_style_bg_color(networks,lv_color_hex(0x1e293b),0);
+    lv_obj_set_style_text_color(networks,lv_color_hex(0xf8fafc),0);
+    lv_obj_set_style_bg_color(keyboard,lv_color_hex(0x111827),LV_PART_MAIN);
+    lv_obj_set_style_bg_color(keyboard,lv_color_hex(0x334155),LV_PART_ITEMS);
+    lv_obj_set_style_text_color(keyboard,lv_color_hex(0xf8fafc),LV_PART_ITEMS);
+    lv_obj_set_style_bg_color(panel,lv_color_hex(0x111827),0);lv_obj_set_style_text_color(panel,lv_color_hex(0xf8fafc),0);
     for(unsigned i=0;i<4;++i){lv_obj_add_flag(fields[i],LV_OBJ_FLAG_HIDDEN);lv_obj_add_flag(field_labels[i],LV_OBJ_FLAG_HIDDEN);lv_obj_add_flag(buttons[i],LV_OBJ_FLAG_HIDDEN);}
     publish(Page::Unlock,"Inicializando segurança. Aguarde...",true);
     render(nullptr);

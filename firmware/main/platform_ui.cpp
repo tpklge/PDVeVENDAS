@@ -76,12 +76,12 @@ void refresh(lv_timer_t*) {
 void create_platform_ui(PlatformStatus& status, lv_display_t* display) {
     state = &status;
     auto theme = lv_theme_default_init(display, lv_palette_main(LV_PALETTE_BLUE),
-        lv_palette_main(LV_PALETTE_TEAL), false, &erp_font_pt_20);
+        lv_palette_main(LV_PALETTE_TEAL), true, &erp_font_pt_20);
     lv_display_set_theme(display, theme);
     auto screen = lv_display_get_screen_active(display);
     lv_obj_set_style_text_font(screen, &erp_font_pt_20, 0);
-    lv_obj_set_style_bg_color(screen, lv_color_hex(0xf8fafc), 0);
-    lv_obj_set_style_text_color(screen, lv_color_hex(0x0f172a), 0);
+    lv_obj_set_style_bg_color(screen, lv_color_hex(0x111827), 0);
+    lv_obj_set_style_text_color(screen, lv_color_hex(0xf8fafc), 0);
     auto title = lv_label_create(screen);
     lv_label_set_text(title, "TAB5 ERP | Plataforma e diagnóstico");
     lv_obj_set_style_text_font(title, &erp_font_pt_28, 0);
@@ -93,8 +93,8 @@ void create_platform_ui(PlatformStatus& status, lv_display_t* display) {
         menu[i] = lv_button_create(screen);
         lv_obj_set_pos(menu[i], 32 + i * 306, 80);
         lv_obj_set_size(menu[i], 282, 64);
-        lv_obj_set_style_bg_color(menu[i], lv_color_hex(0xe2e8f0), 0);
-        lv_obj_set_style_text_color(menu[i], lv_color_hex(0x0f172a), 0);
+        lv_obj_set_style_bg_color(menu[i], lv_color_hex(0x334155), 0);
+        lv_obj_set_style_text_color(menu[i], lv_color_hex(0xf8fafc), 0);
         auto text = lv_label_create(menu[i]);
         lv_label_set_text(text, names[i]);
         lv_obj_center(text);
@@ -105,7 +105,7 @@ void create_platform_ui(PlatformStatus& status, lv_display_t* display) {
         lv_obj_set_pos(pages[i], 32, 164);
         lv_obj_set_size(pages[i], 1216, 486);
         lv_obj_set_style_bg_color(pages[i], lv_color_hex(0x1f2937), 0);
-        lv_obj_set_style_text_color(pages[i], lv_color_hex(0x0f172a), 0);
+        lv_obj_set_style_text_color(pages[i], lv_color_hex(0xf8fafc), 0);
         if (i) lv_obj_add_flag(pages[i], LV_OBJ_FLAG_HIDDEN);
     }
     diagnostic = lv_label_create(pages[0]);
@@ -135,7 +135,7 @@ void create_platform_ui(PlatformStatus& status, lv_display_t* display) {
         lv_indev_set_display(keyboard, display);
     }
     auto footer = lv_label_create(screen);
-    lv_label_set_text(footer, "v0.3.1 | Desenvolvimento | Nenhuma venda é realizada nesta etapa");
+    lv_label_set_text(footer, "v0.3.2 | Desenvolvimento | Nenhuma venda é realizada nesta etapa");
     lv_obj_set_pos(footer, 32, 676);
     select_page(0);
     refresh(nullptr);

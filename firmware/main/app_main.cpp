@@ -9,7 +9,7 @@ extern "C" void app_main() {
     static tab5::PlatformStatus status;
     esp_chip_info_t chip{};
     esp_chip_info(&chip);
-    ESP_LOGI("tab5_erp", "TAB5 ERP v0.3.1 | ESP-IDF %s | núcleos %d", esp_get_idf_version(), chip.cores);
+    ESP_LOGI("tab5_erp", "TAB5 ERP v0.3.2 | ESP-IDF %s | núcleos %d", esp_get_idf_version(), chip.cores);
     lv_display_t* display = bsp_display_start();
     if (!display) { ESP_LOGE("tab5_erp", "Falha ao inicializar display"); return; }
     bsp_display_rotate(display, LV_DISPLAY_ROTATION_90);

@@ -64,7 +64,7 @@ class Refresh(Input):
 
 class PasswordChange(Input):
     current_password: str = Field(min_length=1, max_length=128)
-    new_password: str = Field(min_length=20, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 def current_session(db: Db, token: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]):
