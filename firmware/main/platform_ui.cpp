@@ -55,7 +55,7 @@ void refresh(lv_timer_t*) {
         "Heap interno livre: %lu bytes\nPSRAM livre: %lu bytes\n"
         "Tempo ligado: %lld segundos\n\n"
         "Use Tab e Shift+Tab para navegar. Enter confirma.\n"
-        "Wi-Fi e funções comerciais serão integrados nas próximas versões.",
+        "Wi-Fi e login estão no menu de acesso. Funções comerciais futuras.",
         state->keyboard ? "detectado" : "não detectado", state->keyboard_version,
         static_cast<unsigned long>(state->touch_events),
         state->sd_mounted ? "montado" : "indisponível", state->sd_writable ? "verificada" : "indisponível",
@@ -133,7 +133,7 @@ void create_platform_ui(PlatformStatus& status, lv_display_t* display) {
         lv_indev_set_display(keyboard, display);
     }
     auto footer = lv_label_create(screen);
-    lv_label_set_text(footer, "v0.1.1 | Desenvolvimento | Nenhuma venda é realizada nesta etapa");
+    lv_label_set_text(footer, "v0.3.0 | Desenvolvimento | Nenhuma venda é realizada nesta etapa");
     lv_obj_set_pos(footer, 32, 676);
     select_page(0);
     refresh(nullptr);

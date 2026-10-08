@@ -1,4 +1,5 @@
 #include "platform.hpp"
+#include "auth.hpp"
 #include "bsp/esp-bsp.h"
 #include "esp_chip_info.h"
 #include "esp_log.h"
@@ -9,7 +10,7 @@ extern "C" void app_main() {
     static tab5::PlatformStatus status;
     esp_chip_info_t chip{};
     esp_chip_info(&chip);
-    ESP_LOGI("tab5_erp", "TAB5 ERP v0.1.1 | ESP-IDF %s | núcleos %d", esp_get_idf_version(), chip.cores);
+    ESP_LOGI("tab5_erp", "TAB5 ERP v0.3.0 | ESP-IDF %s | núcleos %d", esp_get_idf_version(), chip.cores);
     // Do not erase NVS automatically: future credentials/configuration must survive errors.
     ESP_ERROR_CHECK(nvs_flash_init());
     lv_display_t* display = bsp_display_start();
@@ -22,6 +23,7 @@ extern "C" void app_main() {
     if (sd != ESP_OK) ESP_LOGW("tab5_erp", "microSD indisponível: %s", esp_err_to_name(sd));
     if (bsp_display_lock(5000)) {
         tab5::create_platform_ui(status, display);
+        tab5::authentication_start(display);
         bsp_display_unlock();
     } else {
         ESP_LOGE("tab5_erp", "Não foi possível criar a interface");

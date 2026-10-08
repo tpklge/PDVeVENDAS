@@ -1,8 +1,11 @@
 # Segurança
 
-Perfil atual é desenvolvimento sem credenciais reais no firmware. NVS é inicializada,
-mas ainda não guarda senhas, tokens ou dados pessoais; NVS Encryption será validada
-na v0.3.0 antes do provisionamento. Falha NVS não causa erase automático.
+O firmware candidato 0.3.0 salva a configuração em envelope AES-256-GCM em NVS,
+com chave derivada da senha admin-local por PBKDF2-HMAC-SHA256/salt individual.
+Por escolha do usuário, exige desbloqueio após cada reinício. A chave não é
+armazenada e senhas/tokens ERP não são persistidos. Esse perfil usa criptografia
+da aplicação; não habilita automaticamente NVS Encryption/HMAC em eFuse.
+Falha NVS não causa erase automático. Ver [autenticação](authentication.md).
 Não ativar eFuses, Secure Boot ou Flash Encryption neste perfil.
 
 Identidades separadas: admin-local, administrador API, root SQL, usuário CRUD SQL,

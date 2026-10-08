@@ -1,5 +1,14 @@
 # Histórico
 
+## 0.3.0 — administração e autenticação (candidata)
+
+- Primeiro boot, admin-local e configurações criptografadas AES-GCM/PBKDF2.
+- Wi-Fi remoto C6, pesquisa/seleção de redes, NTP e HTTPS verificado.
+- Login ERP, troca obrigatória, sessões, perfis/permissões, refresh e logout.
+- Troca local, bloqueio, confirmações de recuperação e diagnóstico preservado.
+- Registro privado de credencial de dispositivo; sem segredo no firmware/Git.
+- Aprovação depende da validação física no Tab5.
+
 ## 0.2.0 — infraestrutura aprovada
 
 - MariaDB, SQL inicial, migrações, API e Traefik existente implantados no OCI.

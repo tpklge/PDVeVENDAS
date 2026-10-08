@@ -4,7 +4,8 @@ import re
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
-ui = (root / "firmware/main/platform_ui.cpp").read_text(encoding="utf-8")
+ui = "\n".join((root / "firmware/main" / name).read_text(encoding="utf-8")
+               for name in ("platform_ui.cpp", "auth.cpp") if (root / "firmware/main" / name).exists())
 strings = [ast.literal_eval('"' + value + '"') for value in re.findall(r'"((?:\\.|[^"\\])*)"', ui)]
 required = set("".join(strings)) | set("çÇãÃõÕáÁéÉíÍóÓúÚâÂêÊôÔàÀüÜ")
 required -= set("\n\r\t")
