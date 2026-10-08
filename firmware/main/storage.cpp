@@ -12,7 +12,7 @@ esp_err_t storage_start(PlatformStatus& status) {
     status.sd_error = bsp_sdcard_mount();
     if (status.sd_error != ESP_OK) return status.sd_error;
     status.sd_mounted = true;
-    for (const char* path : {"/sdcard/ERP", "/sdcard/ERP/logs"}) {
+    for (const char* path : {"/sdcard/ERP", "/sdcard/ERP/logs", "/sdcard/ERP/config"}) {
         if (mkdir(path, 0755) != 0 && errno != EEXIST) return status.sd_error = ESP_FAIL;
     }
     const char* probe = "/sdcard/ERP/.platform-write-test.tmp";
@@ -33,7 +33,7 @@ esp_err_t storage_start(PlatformStatus& status) {
     }
     file = fopen(path, "a");
     if (!file) return status.sd_error = ESP_FAIL;
-    ok = fputs("v0.3.0: plataforma iniciou; microSD gravável\n", file) >= 0;
+    ok = fputs("v0.3.1: plataforma iniciou; microSD gravável\n", file) >= 0;
     ok = fflush(file) == 0 && ok;
     ok = fsync(fileno(file)) == 0 && ok;
     ok = fclose(file) == 0 && ok;

@@ -13,8 +13,8 @@ args = parser.parse_args()
 if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", args.device):
     parser.error("Identificador inválido")
 password = getpass.getpass("Senha local escolhida no Tab5: ")
-if not 20 <= len(password.encode()) <= 128:
-    parser.error("Use entre 20 e 128 bytes")
+if not 4 <= len(password.encode()) <= 128:
+    parser.error("Use entre 4 e 128 bytes")
 if password != getpass.getpass("Confirme a senha local: "):
     parser.error("Confirmação diferente")
 private = args.root / "docs/private"

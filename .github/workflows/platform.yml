@@ -9,6 +9,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - run: g++ -std=c++17 -Wall -Wextra -Werror firmware/tests/core_test.cpp -o /tmp/tab5-core
       - run: /tmp/tab5-core
+      - run: g++ -std=c++17 -Wall -Wextra -Werror firmware/tests/settings_file_test.cpp -o /tmp/tab5-settings && /tmp/tab5-settings
       - run: python3 tools/check_secrets.py
       - run: python3 tools/check_version.py
       - run: python3 tools/check_font_coverage.py
@@ -26,7 +27,7 @@ jobs:
           idf.py build
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: tab5-erp-v0.3.0-usb
+          name: tab5-erp-v0.3.1-usb
           path: |
             firmware/build/tab5_erp.bin
             firmware/build/bootloader/bootloader.bin

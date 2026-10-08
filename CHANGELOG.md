@@ -1,5 +1,13 @@
 # Histórico
 
+## 0.3.1 — Wi-Fi, interface e microSD (candidata)
+
+- Autoteste de boot mais rápido; criptografia das configurações preservada.
+- Mensagem imediata, placeholders ocultos, legendas centralizadas e tema claro.
+- Senha local mínima de 4 caracteres; requisito ERP permanece em 20.
+- Configurações criptografadas no microSD, sem NVS, com cópia de recuperação.
+- Rádio remoto selecionado como ESP32-C6: corrige assert e reinício na pesquisa Wi-Fi.
+
 ## 0.3.0 — administração e autenticação (candidata)
 
 - Primeiro boot, admin-local e configurações criptografadas AES-GCM/PBKDF2.

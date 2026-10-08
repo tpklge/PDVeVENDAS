@@ -1,6 +1,6 @@
-# Etapa 0.3.0 — provisionamento e teste no Tab5
+# Etapa 0.3.1 — provisionamento e teste no Tab5
 
-Firmware candidato 0.3.0; API 0.2.0 já implantada é compatível (`api_version=v1`,
+Firmware candidato 0.3.1; API 0.2.0 já implantada é compatível (`api_version=v1`,
 capabilities auth/rbac). Não é necessário reconstruir a API para este teste.
 
 ## Administrador ERP no servidor
@@ -19,20 +19,20 @@ ao chat nem publicar. O firmware nunca recebe credenciais SQL.
 
 ## Primeiro boot
 
-1. Instalar o firmware 0.3.0 mantendo as partições existentes de 16 MiB.
+1. Inserir microSD gravável e instalar firmware 0.3.1. Não formatar o cartão.
 2. O autoteste verifica PBKDF2 contra um vetor conhecido, AES-GCM roundtrip e
    rejeição de tag adulterada; falha bloqueia o provisionamento.
    Aguardar alguns segundos para a primeira tela de acesso enquanto ele executa.
 3. Criar admin-local. Preferir a senha `local_admin_password` reservada no relatório
    privado do servidor, digitando-a no lugar da sugestão. Alternativamente guardar
-   a senha de 24 caracteres sugerida pelo Tab5 e registrar em relatório privado:
+   a senha de 4 dígitos sugerida pelo Tab5 e registrar em relatório privado:
 
 ```sh
 python3 tools/record_device_credentials.py --root . --device TAB5_1
 ```
 
 O utilitário solicita a senha sem eco e não a imprime. A senha local deve ter
-pelo menos 20 caracteres; é independente da senha ERP.
+pelo menos 4 caracteres; é independente da senha ERP.
 
 4. Pesquisar redes, selecionar SSID ou digitar manualmente, informar a senha Wi-Fi
    e conferir `https://tab5api.ampere.diadiatech.com.br`. Salvar e conectar.
@@ -48,13 +48,15 @@ pelo menos 20 caracteres; é independente da senha ERP.
 
 ## Desbloqueio após reinício
 
-Por escolha do usuário, Wi-Fi/API ficam em envelope AES-256-GCM em NVS. A chave
+Por escolha do usuário, Wi-Fi/API ficam em envelope AES-256-GCM no microSD em `/ERP/config/settings.enc`. A chave
 é derivada da senha admin-local com PBKDF2-HMAC-SHA256, salt individual e 200.000
 iterações. A derivação cede CPU periodicamente para manter interface/watchdog.
 O perfil mantém a fonte de entropia ADC do P4 ativa para RNG e handshakes TLS;
 não inicializa sensores ADC. Integrar ADC no futuro exige revisar esse uso.
 A tag autenticada valida a senha; não existe senha ou chave de configuração
-em texto puro na flash. Cada gravação usa nonce novo e commit NVS.
+em texto puro na flash. Cada gravação usa nonce novo, arquivo temporário, flush/fsync e cópia anterior `.bak`.
+O firmware não salva configurações na NVS nem inicializa a NVS; o driver Wi-Fi
+usa armazenamento RAM.
 
 Depois de reiniciar, informar admin-local para desbloquear a configuração e
 reconectar. O login ERP é separado. Tokens ficam em memória interna, não em
@@ -66,8 +68,8 @@ firmware por USB em equipamento sob controle físico.
 
 Alterar a senha local recriptografa as configurações; guardar a nova senha e
 eliminar o registro inicial antigo. Esquecer rede e restaurar configurações
-exigem confirmação. Restauração na interface remove logicamente o blob NVS e
-reinicia; não equivale a sanitização forense de toda a flash e preserva o banco.
+exigem confirmação. Restauração na interface remove os arquivos de configuração do cartão e
+reinicia; não equivale a sanitização forense de todo o cartão e preserva o banco.
 
 ## Wi-Fi e recuperação física
 
@@ -79,12 +81,24 @@ E1.P0 é colocado em nível baixo para selecionar a antena interna.
 Se pesquisa/conexão falhar, coletar log serial sanitizado; não regravar o C6
 automaticamente. Não fornecer imagem de C6 incompatível só para contornar o erro.
 
-Se a senha local for perdida, a recuperação exige posse física, conexão USB,
-backup dos dados necessários e apagar explicitamente a partição NVS da aplicação
-(offset 0x9000, tamanho 0x6000 no particionamento atual), após confirmação do
-operador. Isso remove a configuração/credencial local e retorna ao primeiro boot;
-não altera banco, SD ou firmware do C6. Não executar erase-flash completo como
-procedimento padrão. Falha NVS não causa apagamento automático no firmware.
+Para fazer backup, desligue o Tab5, remova o microSD e copie toda a pasta `ERP`
+para um local seguro. Preserve a senha local: o arquivo de configurações é
+criptografado e não abre sem ela. O banco comercial fica no MariaDB do servidor;
+o backup dele continua sendo feito por `docker/scripts/backup.sh`.
+
+Trocar firmware não apaga os arquivos do microSD. Nenhum cartão é formatado pelo
+ERP. Cartão ausente ou sem escrita bloqueia configuração/login e pede inserir
+cartão e reiniciar. Erros de leitura ou arquivo corrompido não viram primeiro boot
+nem apagam arquivos automaticamente.
+
+Na atualização de 0.3.0 para 0.3.1, configure novamente a senha local, Wi-Fi e API:
+a configuração antiga da NVS não é importada. Nas próximas trocas de firmware,
+preserve o cartão e a pasta `ERP` para reutilizar a configuração.
+
+Se perder a senha local, faça backup e remova manualmente apenas a pasta
+`ERP/config` no computador. Isso retorna ao primeiro boot sem alterar o banco do
+servidor. A cópia `.bak` guarda a gravação anterior, que pode exigir a senha local
+anterior se o backup ocorreu antes da troca de senha.
 
 ## Critérios de validação física pendentes
 
@@ -101,7 +115,7 @@ procedimento padrão. Falha NVS não causa apagamento automático no firmware.
 
 Testes automatizados da API cobrem troca obrigatória, revogação, refresh/replay,
 device binding, RBAC, inatividade, expiração e limitação de tentativas. A aprovação
-da etapa e tag 0.3.0 dependem dos testes no Tab5; não extrapolar compilação para
+da etapa e tag 0.3.1 dependem dos testes no Tab5; não extrapolar compilação para
 funcionamento físico.
 
 Referência de versões/pinos: [exemplo oficial M5Stack](https://github.com/m5stack/M5Tab5-UserDemo/tree/main/platforms/tab5).

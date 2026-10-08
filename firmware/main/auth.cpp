@@ -1,4 +1,9 @@
 #include "auth.hpp"
+#include "sdkconfig.h"
+
+#if !CONFIG_SLAVE_IDF_TARGET_ESP32C6
+#error "Tab5 requires ESP32-C6 as the ESP-Hosted slave target"
+#endif
 #include "bsp/esp-bsp.h"
 #include "erp_fonts.h"
 #include "esp_wifi.h"
@@ -14,7 +19,7 @@
 #include "esp_mac.h"
 #include "esp_timer.h"
 #include "esp_system.h"
-#include "nvs.h"
+#include "settings_file.hpp"
 #include "mbedtls/pkcs5.h"
 #include "mbedtls/gcm.h"
 #include "mbedtls/platform_util.h"
@@ -52,7 +57,8 @@ View view{};
 QueueHandle_t commands;
 SemaphoreHandle_t view_lock;
 EventGroupHandle_t wifi_events;
-nvs_handle_t store;
+constexpr char settings_path[]="/sdcard/ERP/config/settings.enc";
+bool card_ready=false;
 Settings settings{};
 Envelope envelope{};
 uint8_t key[32]{};
@@ -79,7 +85,7 @@ void publish(Page page,const char* text,bool busy=false) {
     xSemaphoreGive(view_lock);
 }
 void clear_session() { if(!access.empty())wipe(access.data(),access.size()); if(!refresh_token.empty())wipe(refresh_token.data(),refresh_token.size()); access.clear();refresh_token.clear();refresh_at=0; }
-bool derive(const char* password,const uint8_t* salt,uint8_t* result) {
+bool derive(const char* password,const uint8_t* salt,uint8_t* result,unsigned iterations=200000) {
     mbedtls_md_context_t ctx;mbedtls_md_init(&ctx);
     uint8_t u[32]{};constexpr uint8_t block[]={0,0,0,1};
     int rc=mbedtls_md_setup(&ctx,mbedtls_md_info_from_type(MBEDTLS_MD_SHA256),1);
@@ -88,7 +94,7 @@ bool derive(const char* password,const uint8_t* salt,uint8_t* result) {
     if(rc==0)rc=mbedtls_md_hmac_update(&ctx,block,sizeof(block));
     if(rc==0)rc=mbedtls_md_hmac_finish(&ctx,u);
     memcpy(result,u,32);
-    for(unsigned i=1;i<200000 && rc==0;++i){
+    for(unsigned i=1;i<iterations && rc==0;++i){
         rc=mbedtls_md_hmac_reset(&ctx);
         if(rc==0)rc=mbedtls_md_hmac_update(&ctx,u,32);
         if(rc==0)rc=mbedtls_md_hmac_finish(&ctx,u);
@@ -111,7 +117,7 @@ bool save() {
     Envelope next=envelope;
     random_bytes(next.iv,sizeof(next.iv));
     if(!crypt(true,key,next,settings))return false;
-    if(nvs_set_blob(store,"settings",&next,sizeof(next))!=ESP_OK || nvs_commit(store)!=ESP_OK)return false;
+    if(!card_ready || !save_settings_file(settings_path,&next,sizeof(next)))return false;
     envelope=next;return true;
 }
 void wifi_event(void*,esp_event_base_t base,int32_t id,void*) {
@@ -132,6 +138,7 @@ bool init_wifi() {
     esp_event_handler_register(WIFI_EVENT,ESP_EVENT_ANY_ID,wifi_event,nullptr);
     esp_event_handler_register(IP_EVENT,IP_EVENT_STA_GOT_IP,wifi_event,nullptr);
     wifi_init_config_t cfg=WIFI_INIT_CONFIG_DEFAULT();
+    cfg.nvs_enable=0;
     if(esp_wifi_init(&cfg)!=ESP_OK)return false;
     if(esp_wifi_set_storage(WIFI_STORAGE_RAM)!=ESP_OK || esp_wifi_set_mode(WIFI_MODE_STA)!=ESP_OK || esp_wifi_start()!=ESP_OK)return false;
     wifi_started=true;return true;
@@ -216,22 +223,20 @@ void worker(void*) {
     // P4 has no local RF entropy source. ADC is reserved for RNG in this profile.
     bootloader_random_enable();
     uint8_t test_salt[16],test_key[32]{};for(unsigned i=0;i<16;++i)test_salt[i]=i;
-    constexpr uint8_t expected[]={0x6f,0x18,0x73,0xc6,0x37,0xf7,0x20,0xce,0x69,0x48,0x2e,0x53,0xd9,0x06,0x49,0xc9,0xbc,0xa2,0xbb,0x70,0xd0,0xf7,0x2b,0x0b,0x39,0xd0,0x30,0x36,0xf0,0x4c,0xc0,0x1c};
-    bool crypto_ok=derive("TAB5-crypto-selftest",test_salt,test_key)&&memcmp(test_key,expected,32)==0;
+    constexpr uint8_t expected[]={0xac,0xc5,0xf4,0x7b,0x58,0xd5,0x90,0x16,0xf8,0x8b,0xed,0xc0,0xce,0x41,0x87,0xb6,0x55,0x18,0xf2,0xad,0x96,0x2b,0xe5,0xf1,0xe0,0x5d,0x20,0x62,0xe1,0xb9,0x47,0x2e};
+    bool crypto_ok=derive("TAB5-crypto-selftest",test_salt,test_key,2048)&&memcmp(test_key,expected,32)==0;
     Envelope test{};Settings plain{},opened{};snprintf(plain.ssid,sizeof(plain.ssid),"crypto-test");
     crypto_ok=crypto_ok&&crypt(true,test_key,test,plain)&&crypt(false,test_key,test,opened)&&memcmp(&plain,&opened,sizeof(plain))==0;
     test.tag[0]^=1;crypto_ok=crypto_ok&&!crypt(false,test_key,test,opened);wipe(test_key,32);
     if(!crypto_ok){publish(Page::Unlock,"Autoteste criptográfico falhou. Provisionamento bloqueado.");vTaskDelete(nullptr);return;}
-    size_t size=sizeof(envelope);
-    esp_err_t rc=nvs_open("erp_auth",NVS_READWRITE,&store);
-    if(rc!=ESP_OK){publish(Page::Unlock,"Falha ao abrir configurações. Nenhum dado foi apagado.");vTaskDelete(nullptr);return;}
-    rc=nvs_get_blob(store,"settings",&envelope,&size);
-    if(rc==ESP_ERR_NVS_NOT_FOUND){
+    if(!card_ready){publish(Page::Unlock,"microSD necessário. Insira um cartão gravável e reinicie. Nenhuma configuração será salva na memória interna.",true);vTaskDelete(nullptr);return;}
+    auto rc=load_settings_file(settings_path,&envelope,sizeof(envelope));
+    if(rc==FileRead::Missing){
         uint8_t random[24];random_bytes(random,sizeof(random));
-        constexpr char alphabet[]="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789-_";
-        xSemaphoreTake(view_lock,portMAX_DELAY);for(unsigned i=0;i<24;++i)view.generated[i]=alphabet[random[i]% (sizeof(alphabet)-1)];view.generated[24]=0;xSemaphoreGive(view_lock);wipe(random,sizeof(random));
+        constexpr char alphabet[]="0123456789";
+        xSemaphoreTake(view_lock,portMAX_DELAY);for(unsigned i=0;i<4;++i)view.generated[i]=alphabet[random[i]% (sizeof(alphabet)-1)];view.generated[4]=0;xSemaphoreGive(view_lock);wipe(random,sizeof(random));
         publish(Page::Provision,"Primeiro boot. Guarde a senha local sugerida em local seguro.");
-    }else if(rc!=ESP_OK || size!=sizeof(envelope) || envelope.format!=1){publish(Page::Unlock,"Configuração inválida. Recuperação física necessária; nenhum dado apagado.");vTaskDelete(nullptr);return;}
+    }else if(rc!=FileRead::Found || envelope.format!=1){publish(Page::Unlock,"Configuração inválida. Recuperação física necessária; nenhum dado apagado.");vTaskDelete(nullptr);return;}
     else publish(Page::Unlock,"Desbloqueie a rede com a senha do admin-local.");
     for(;;){
         Command cmd{};
@@ -254,14 +259,14 @@ void worker(void*) {
             bool initial=cmd.action==Action::Provision;
             if(initial && envelope.format==1){publish(current,"Administrador local já configurado.");wipe(&cmd,sizeof(cmd));continue;}
             uint8_t candidate[32]{};Settings opened{};
-            bool ok=strlen(cmd.fields[0])>= (initial?20u:1u);
+            bool ok=strlen(cmd.fields[0])>= (initial?4u:1u);
             if(initial && ok){random_bytes(envelope.salt,16);}
             ok=ok && derive(cmd.fields[0],envelope.salt,candidate);
             if(!initial)ok=ok&&crypt(false,candidate,envelope,opened);
             if(ok){memcpy(key,candidate,32);unlocked=true;failures=0;settings=opened;
                 xSemaphoreTake(view_lock,portMAX_DELAY);wipe(view.generated,sizeof(view.generated));xSemaphoreGive(view_lock);
                 if(initial){envelope.format=1;snprintf(settings.api,sizeof(settings.api),"https://tab5api.ampere.diadiatech.com.br");ok=save();}
-                if(!ok){unlocked=false;wipe(key,sizeof(key));publish(current,"Não foi possível salvar as configurações.");}
+                if(!ok){unlocked=false;wipe(key,sizeof(key));if(initial)wipe(&envelope,sizeof(envelope));publish(current,"Não foi possível salvar as configurações. Confira o microSD.");}
                 else if(settings.ssid[0] && connect_wifi() && health())publish(Page::Login,"Rede e API disponíveis. Entre com seu usuário ERP.");
                 else publish(Page::Configure,"Configure a rede e teste a conexão com a API.");
             }else{++failures;lock_until=esp_timer_get_time()+int64_t(std::min(1u<<std::min(failures,6u),60u))*1000000;publish(current,"Senha inválida ou configuração não autenticada. Aguarde e tente novamente.");}
@@ -297,15 +302,15 @@ void worker(void*) {
         }else if(cmd.action==Action::Logout){Response response;int code=request("/api/v1/auth/logout","",response,true);clear_session();publish(Page::Login,code==204?"Sessão encerrada.":"Sessão removida deste dispositivo; revogação remota não confirmada.");}
         else if(cmd.action==Action::LocalPassword){
             uint8_t candidate[32]{};Settings opened{};
-            bool ok=derive(cmd.fields[0],envelope.salt,candidate)&&crypt(false,candidate,envelope,opened)&&strlen(cmd.fields[1])>=20;
+            bool ok=derive(cmd.fields[0],envelope.salt,candidate)&&crypt(false,candidate,envelope,opened)&&strlen(cmd.fields[1])>=4;
             Envelope old=envelope;uint8_t old_key[32];memcpy(old_key,key,32);
             if(ok){random_bytes(envelope.salt,16);ok=derive(cmd.fields[1],envelope.salt,key)&&save();}
             if(!ok){envelope=old;memcpy(key,old_key,32);}
-            wipe(candidate,32);wipe(old_key,32);wipe(&opened,sizeof(opened));publish(Page::Configure,ok?"Senha local alterada; guarde-a em local seguro.":"Confira a senha local atual e a nova senha (20 caracteres).");
+            wipe(candidate,32);wipe(old_key,32);wipe(&opened,sizeof(opened));publish(Page::Configure,ok?"Senha local alterada; guarde-a em local seguro.":"Confira a senha local atual e a nova senha (4 caracteres).");
         }else if(cmd.action==Action::Forget){clear_session();if(wifi_started)esp_wifi_disconnect();wipe(settings.ssid,sizeof(settings.ssid));wipe(settings.password,sizeof(settings.password));publish(Page::Configure,save()?"Rede esquecida.":"Falha ao salvar alteração.");}
         else if(cmd.action==Action::Lock){clear_session();if(wifi_started)esp_wifi_disconnect();unlocked=false;wipe(key,32);wipe(&settings,sizeof(settings));publish(Page::Unlock,"Configuração bloqueada. Entre como admin-local.");}
         else if(cmd.action==Action::Reset){
-            if(nvs_erase_key(store,"settings")!=ESP_OK || nvs_commit(store)!=ESP_OK)publish(Page::Configure,"Falha ao remover configuração. Nenhum reinício executado.");
+            if(!erase_settings_files(settings_path))publish(Page::Configure,"Falha ao remover configuração. Nenhum reinício executado.");
             else{clear_session();wipe(key,32);wipe(&settings,sizeof(settings));wipe(&envelope,sizeof(envelope));wipe(&cmd,sizeof(cmd));esp_restart();}
         }
         wipe(&cmd,sizeof(cmd));
@@ -343,10 +348,10 @@ void render(lv_timer_t*) {
     for(unsigned i=0;i<4;++i){lv_obj_add_flag(fields[i],LV_OBJ_FLAG_HIDDEN);lv_obj_add_flag(field_labels[i],LV_OBJ_FLAG_HIDDEN);lv_obj_add_flag(buttons[i],LV_OBJ_FLAG_HIDDEN);lv_obj_remove_event_cb(buttons[i],pressed);lv_obj_remove_event_cb(buttons[i],navigate_to);lv_textarea_set_text(fields[i],"");}
     auto field=[&](unsigned i,const char* label,bool secret,const char* initial=""){
         secret_fields[i]=secret;lv_label_set_text(field_labels[i],label);lv_obj_remove_flag(field_labels[i],LV_OBJ_FLAG_HIDDEN);lv_obj_remove_flag(fields[i],LV_OBJ_FLAG_HIDDEN);lv_textarea_set_password_mode(fields[i],secret);lv_textarea_set_text(fields[i],initial);lv_group_add_obj(input_group,fields[i]);};
-    auto button=[&](unsigned i,const char* label,Action action){auto text=lv_obj_get_child(buttons[i],0);lv_label_set_text(text,label);lv_obj_remove_flag(buttons[i],LV_OBJ_FLAG_HIDDEN);lv_obj_add_event_cb(buttons[i],pressed,LV_EVENT_CLICKED,reinterpret_cast<void*>(static_cast<uintptr_t>(action)));lv_group_add_obj(input_group,buttons[i]);};
-    auto navigation=[&](unsigned i,const char* label,Page page){lv_label_set_text(lv_obj_get_child(buttons[i],0),label);lv_obj_remove_flag(buttons[i],LV_OBJ_FLAG_HIDDEN);lv_obj_add_event_cb(buttons[i],navigate_to,LV_EVENT_CLICKED,reinterpret_cast<void*>(static_cast<uintptr_t>(page)));lv_group_add_obj(input_group,buttons[i]);};
+    auto button=[&](unsigned i,const char* label,Action action){auto text=lv_obj_get_child(buttons[i],0);lv_label_set_text(text,label);lv_obj_center(text);lv_obj_remove_flag(buttons[i],LV_OBJ_FLAG_HIDDEN);lv_obj_add_event_cb(buttons[i],pressed,LV_EVENT_CLICKED,reinterpret_cast<void*>(static_cast<uintptr_t>(action)));lv_group_add_obj(input_group,buttons[i]);};
+    auto navigation=[&](unsigned i,const char* label,Page page){lv_label_set_text(lv_obj_get_child(buttons[i],0),label);lv_obj_center(lv_obj_get_child(buttons[i],0));lv_obj_remove_flag(buttons[i],LV_OBJ_FLAG_HIDDEN);lv_obj_add_event_cb(buttons[i],navigate_to,LV_EVENT_CLICKED,reinterpret_cast<void*>(static_cast<uintptr_t>(page)));lv_group_add_obj(input_group,buttons[i]);};
     switch(next.page){
-    case Page::Provision:lv_label_set_text(heading,"TAB5 ERP | Primeiro boot: admin-local");field(0,"Senha local (mínimo 20 caracteres)",false,next.generated);button(0,"Criar admin-local",Action::Provision);break;
+    case Page::Provision:lv_label_set_text(heading,"TAB5 ERP | Primeiro boot: admin-local");field(0,"Senha local (mínimo 4 caracteres)",false,next.generated);button(0,"Criar admin-local",Action::Provision);break;
     case Page::Unlock:lv_label_set_text(heading,"TAB5 ERP | Desbloqueio local");field(0,"Senha do admin-local",true);button(0,"Desbloquear",Action::Unlock);break;
     case Page::Configure:lv_label_set_text(heading,"TAB5 ERP | Wi-Fi e servidor");field(0,"SSID",false);field(1,"Senha Wi-Fi",true);field(2,"URL HTTPS",false,"https://tab5api.ampere.diadiatech.com.br");button(0,"Salvar e conectar",Action::Save);button(1,"Pesquisar redes",Action::Scan);navigation(2,"Senha local",Page::LocalPassword);navigation(3,"Esquecer rede",Page::ConfirmForget);break;
     case Page::Login:lv_label_set_text(heading,"TAB5 ERP | Login ERP");field(0,"Usuário ERP",false);field(1,"Senha ERP",true);button(0,"Entrar",Action::Login);navigation(1,"Configurar rede",Page::Configure);button(2,"Bloquear",Action::Lock);break;
@@ -360,7 +365,8 @@ void render(lv_timer_t*) {
     lv_keyboard_set_textarea(keyboard,next.page==Page::Session?nullptr:fields[0]);
 }
 }
-void authentication_start(lv_display_t* display){
+void authentication_start(lv_display_t* display,bool sd_writable){
+    card_ready=sd_writable;
     cJSON_Hooks hooks{json_allocate,json_release};cJSON_InitHooks(&hooks);
     view_lock=xSemaphoreCreateMutex();commands=xQueueCreate(1,sizeof(Command));wifi_events=xEventGroupCreate();
     uint8_t mac[6];esp_read_mac(mac,ESP_MAC_BASE);snprintf(device_id,sizeof(device_id),"tab5-%02x%02x%02x%02x%02x%02x",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
@@ -378,6 +384,13 @@ void authentication_start(lv_display_t* display){
     networks=lv_dropdown_create(panel);lv_obj_set_pos(networks,8,260);lv_obj_set_size(networks,288,28);lv_dropdown_set_options(networks,"Pesquise redes");lv_obj_add_event_cb(networks,selected_network,LV_EVENT_VALUE_CHANGED,nullptr);
     for(auto* input=lv_indev_get_next(nullptr);input;input=lv_indev_get_next(input))if(lv_indev_get_type(input)==LV_INDEV_TYPE_KEYPAD)lv_indev_set_group(input,input_group);
     lv_timer_create(render,100,nullptr);
+    auto style_button=[](lv_obj_t* button){lv_obj_set_style_bg_color(button,lv_color_hex(0xe2e8f0),LV_PART_MAIN);lv_obj_set_style_bg_color(button,lv_color_hex(0xcbd5e1),LV_PART_MAIN|LV_STATE_PRESSED);lv_obj_set_style_text_color(button,lv_color_hex(0x0f172a),LV_PART_MAIN);auto* text=lv_obj_get_child(button,0);lv_obj_set_style_text_color(text,lv_color_hex(0x0f172a),0);lv_obj_center(text);};
+    for(auto* button:buttons)style_button(button);
+    style_button(reveal);style_button(diag);style_button(return_button);
+    lv_obj_set_style_bg_color(panel,lv_color_hex(0xf8fafc),0);lv_obj_set_style_text_color(panel,lv_color_hex(0x0f172a),0);
+    for(unsigned i=0;i<4;++i){lv_obj_add_flag(fields[i],LV_OBJ_FLAG_HIDDEN);lv_obj_add_flag(field_labels[i],LV_OBJ_FLAG_HIDDEN);lv_obj_add_flag(buttons[i],LV_OBJ_FLAG_HIDDEN);}
+    publish(Page::Unlock,"Inicializando segurança. Aguarde...",true);
+    render(nullptr);
     if(xTaskCreate(worker,"erp-auth",12288,nullptr,5,nullptr)!=pdPASS)publish(Page::Unlock,"Memória insuficiente para iniciar autenticação.");
 }
 }
