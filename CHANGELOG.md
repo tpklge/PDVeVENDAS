@@ -1,5 +1,13 @@
 # Histórico
 
+## 0.2.0 — infraestrutura (validação final pendente)
+
+- MariaDB, SQL inicial, migrações, API e Traefik existente implantados no OCI.
+- HTTPS validado pelo usuário com certificado Let's Encrypt e health ready.
+- Secrets de arquivo, healthchecks, backup e restauração.
+- Verificação de persistência e restauração isolada; CI Docker AMD64/ARM64.
+- Firmware permanece em 0.1.1; aprovação final depende dos testes restantes.
+
 ## 0.1.1 — fonte pt-BR
 
 - Corrige glifos ausentes nas fontes: Latin-1 para ç/acentos nos tamanhos 20 e 28.

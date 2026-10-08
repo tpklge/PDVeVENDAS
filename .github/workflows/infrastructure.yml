@@ -1,0 +1,33 @@
+name: Infraestrutura MariaDB e API
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  infrastructure:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Subir stack com MariaDB real
+        run: |
+          cp docker/.env.example docker/.env
+          docker network create meshcentral_proxy
+          bash docker/scripts/install.sh
+      - name: Testar persistência e backup restaurado
+        env:
+          SKIP_PUBLIC_HTTPS: "1"
+        run: bash docker/scripts/validate-release.sh
+      - name: Testes da API
+        run: |
+          python3 -m venv /tmp/tab5-api-tests
+          /tmp/tab5-api-tests/bin/pip install -r api/requirements-test.in
+          /tmp/tab5-api-tests/bin/python -m pytest api/tests -q
+      - name: Diagnóstico em falha
+        if: failure()
+        run: docker compose --env-file docker/.env -f docker/compose.yaml logs --tail=100
+      - name: Encerrar containers de CI
+        if: always()
+        run: docker compose --env-file docker/.env -f docker/compose.yaml down
