@@ -1,0 +1,35 @@
+name: Plataforma Tab5
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  portable-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - run: g++ -std=c++17 -Wall -Wextra -Werror firmware/tests/core_test.cpp -o /tmp/tab5-core
+      - run: /tmp/tab5-core
+      - run: python3 tools/check_secrets.py
+      - run: python3 tools/check_version.py
+  firmware:
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.4.4
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Build ESP32-P4
+        shell: bash
+        working-directory: firmware
+        run: |
+          source /opt/esp/idf/export.sh
+          idf.py set-target esp32p4
+          idf.py build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: tab5-erp-v0.1.0-usb
+          path: |
+            firmware/build/tab5_erp.bin
+            firmware/build/bootloader/bootloader.bin
+            firmware/build/partition_table/partition-table.bin
+            firmware/build/ota_data_initial.bin
+            firmware/build/flasher_args.json
+            firmware/build/flash_args
