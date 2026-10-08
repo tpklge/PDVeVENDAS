@@ -21,6 +21,17 @@ inline FileRead load_settings_file(const std::string& path, void* data, size_t s
 inline bool remove_settings_path(const std::string& path) {
     return unlink(path.c_str()) == 0 || errno == ENOENT;
 }
+inline bool commit_settings_temp(const std::string& path) {
+    const std::string temp = path + ".tmp", backup = path + ".bak";
+    if (access(path.c_str(), F_OK) == 0) {
+        if (!remove_settings_path(backup) || rename(path.c_str(), backup.c_str()) != 0) return false;
+    } else if (errno != ENOENT) return false;
+    if (rename(temp.c_str(), path.c_str()) != 0) {
+        rename(backup.c_str(), path.c_str());
+        return false;
+    }
+    return true;
+}
 inline bool save_settings_file(const std::string& path, const void* data, size_t size) {
     const std::string temp = path + ".tmp", backup = path + ".bak";
     FILE* file = fopen(temp.c_str(), "wb");
@@ -32,16 +43,8 @@ inline bool save_settings_file(const std::string& path, const void* data, size_t
     if (!ok) { remove_settings_path(temp); return false; }
     // FAT rename cannot replace an existing file. Keep the committed copy
     // until the complete temporary file is flushed; recover .bak at boot.
-    if (access(path.c_str(), F_OK) == 0) {
-        if (!remove_settings_path(backup) || rename(path.c_str(), backup.c_str()) != 0) {
-            remove_settings_path(temp); return false;
-        }
-    } else if (errno != ENOENT) { remove_settings_path(temp); return false; }
-    if (rename(temp.c_str(), path.c_str()) != 0) {
-        rename(backup.c_str(), path.c_str());
-        remove_settings_path(temp); return false;
-    }
-    return true;
+    if (commit_settings_temp(path)) return true;
+    remove_settings_path(temp); return false;
 }
 inline bool erase_settings_files(const std::string& path) {
     // Remove fallback first so an interrupted reset cannot resurrect it.

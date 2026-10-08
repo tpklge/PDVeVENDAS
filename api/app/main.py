@@ -4,18 +4,15 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
 from sqlalchemy import func, select, text, update
-from sqlalchemy.orm import Session as DbSession
 from .config import VERSION, SCHEMA_REVISION
 from .db import get_db
 from .models import AuditLog, AuthAudit, Permission, Role, Session, User, utcnow
 from .security import DUMMY_HASH, digest, hasher, issue_session, verify
 
-app = FastAPI(title="TAB5 ERP", version=VERSION, description="Fundação de autenticação e infraestrutura. Não contém PDV nesta versão.")
-bearer = HTTPBearer(auto_error=False)
-Db = Annotated[DbSession, Depends(get_db)]
+app = FastAPI(title="TAB5 ERP", version=VERSION, description="Gestão de produtos e autenticação. PDV ainda indisponível.")
+from .dependencies import Db, Input, Current, allowed
 
 
 @app.middleware("http")
@@ -39,16 +36,17 @@ async def http_error(request, exc):
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(request, exc):
-    return error_response(request, 422, "VALIDATION_ERROR", "Verifique os campos informados.")
+    labels = {"sku": "SKU", "barcode": "GTIN/EAN e dígito verificador", "name": "Nome", "category": "Categoria",
+        "sale_price": "Preço de venda (até 2 casas)", "cost_price": "Preço de custo (até 2 casas)",
+        "stock": "Estoque (até 3 casas)", "stock_min": "Estoque mínimo", "stock_max": "Estoque máximo",
+        "ncm": "NCM (8 dígitos)", "cest": "CEST (7 dígitos)", "origin": "Origem (0 a 8)"}
+    names = sorted({labels.get(str(error["loc"][-1]), "campos informados") for error in exc.errors()})
+    return error_response(request, 422, "VALIDATION_ERROR", "Verifique: " + ", ".join(names) + ".")
 
 
 @app.exception_handler(Exception)
 async def unexpected_error(request, exc):
     return error_response(request, 500, "INTERNAL_ERROR", "Não foi possível concluir a operação.")
-
-
-class Input(BaseModel):
-    model_config = ConfigDict(extra="forbid")
 
 
 class Login(Input):
@@ -65,31 +63,6 @@ class Refresh(Input):
 class PasswordChange(Input):
     current_password: str = Field(min_length=1, max_length=128)
     new_password: str = Field(min_length=8, max_length=128)
-
-
-def current_session(db: Db, token: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]):
-    session = db.scalar(select(Session).where(Session.access_hash == digest(token.credentials))) if token else None
-    if not session or session.revoked or session.access_expires <= utcnow():
-        raise HTTPException(401, "Sessão inválida ou expirada.")
-    user = db.get(User, session.user_id)
-    if not user or not user.active:
-        raise HTTPException(401, "Sessão inválida ou expirada.")
-    return session, user
-
-
-Current = Annotated[tuple[Session, User], Depends(current_session)]
-
-
-def allowed(code):
-    def dependency(current: Current):
-        _, user = current
-        if user.must_change_password:
-            raise HTTPException(403, "Altere a senha inicial antes de continuar.")
-        codes = {p.code for r in user.roles for p in r.permissions}
-        if code not in codes:
-            raise HTTPException(403, "Você não tem permissão para esta operação.")
-        return user
-    return dependency
 
 
 def audit(db, request, user, operation, origin):
@@ -115,7 +88,7 @@ def ready(db: Db):
 
 @app.get("/api/v1/system/status")
 def status():
-    return {"version": VERSION, "api_version": "v1", "capabilities": ["auth", "rbac"], "commercial_operations": False}
+    return {"version": VERSION, "api_version": "v1", "capabilities": ["auth", "rbac", "products", "catalog_snapshot"], "commercial_operations": False}
 
 
 @app.post("/api/v1/auth/login")
@@ -205,3 +178,7 @@ def users(db: Db, user: Annotated[User, Depends(allowed("users.read"))],
           offset: int = Query(0, ge=0), limit: int = Query(25, ge=1, le=100)):
     rows = db.scalars(select(User).order_by(User.id).offset(offset).limit(limit))
     return {"items": [{"id": u.id, "username": u.username, "active": u.active} for u in rows], "offset": offset, "limit": limit}
+
+
+from .products import router as products_router
+app.include_router(products_router)

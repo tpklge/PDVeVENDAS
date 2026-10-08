@@ -1,5 +1,12 @@
 # Histórico
 
+## 0.5.0 — produtos (candidata)
+
+- Cadastro, edição, filtros, categorias, preços e inativação na API e Tab5.
+- Migração incremental, preços decimais, GTIN e concorrência por versão.
+- Cache paginado no microSD, consultas sem rede e gravação apenas na API.
+- Etapa 0.4 validada fisicamente pelo usuário.
+
 ## 0.4.0 — interface principal (candidata)
 
 - Dashboard, menus, navegação por toque/teclado e sessão integrada.

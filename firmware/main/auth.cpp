@@ -1,5 +1,6 @@
 #include "auth.hpp"
 #include "dashboard.hpp"
+#include "products.hpp"
 #include "sdkconfig.h"
 
 #if !CONFIG_SLAVE_IDF_TARGET_ESP32C6
@@ -64,6 +65,7 @@ Settings settings{};
 Envelope envelope{};
 uint8_t key[32]{};
 bool unlocked=false, wifi_started=false;
+bool browsing_products=false;
 esp_netif_t* netif=nullptr;
 String access, refresh_token;
 char device_id[32]{};
@@ -174,13 +176,14 @@ esp_err_t http_event(esp_http_client_event_t* event) {
     }
     return ESP_OK;
 }
-int request(const char* path,const char* body,Response& response,bool authenticated=false) {
+int request(const char* path,const char* body,Response& response,bool authenticated=false,esp_http_client_method_t method=HTTP_METHOD_GET) {
     if(!(xEventGroupGetBits(wifi_events)&1) || !sync_time())return -1;
     String url=String(settings.api)+path;
     esp_http_client_config_t cfg{};cfg.url=url.c_str();cfg.crt_bundle_attach=esp_crt_bundle_attach;
     cfg.timeout_ms=15000;cfg.disable_auto_redirect=true;cfg.event_handler=http_event;cfg.user_data=&response;
     auto client=esp_http_client_init(&cfg);if(!client)return -1;
-    if(body){esp_http_client_set_method(client,HTTP_METHOD_POST);esp_http_client_set_header(client,"Content-Type","application/json");esp_http_client_set_post_field(client,body,strlen(body));}
+    if(method!=HTTP_METHOD_GET)esp_http_client_set_method(client,method);
+    if(body){esp_http_client_set_method(client,method==HTTP_METHOD_GET?HTTP_METHOD_POST:method);esp_http_client_set_header(client,"Content-Type","application/json");esp_http_client_set_post_field(client,body,strlen(body));}
     if(authenticated){String auth="Bearer "+access;esp_http_client_set_header(client,"Authorization",auth.c_str());wipe(auth.data(),auth.size());}
     int result=esp_http_client_perform(client)==ESP_OK && !response.overflow?esp_http_client_get_status_code(client):-1;
     esp_http_client_cleanup(client);return result;
@@ -226,6 +229,21 @@ void show_session() {
     xSemaphoreTake(view_lock,portMAX_DELAY);snprintf(view.permissions,sizeof(view.permissions),"%s",permissions.c_str());xSemaphoreGive(view_lock);
     cJSON_Delete(data);xSemaphoreTake(view_lock,portMAX_DELAY);snprintf(view.identity,sizeof(view.identity),"%s",msg.c_str());xSemaphoreGive(view_lock);publish(Page::Session,msg.c_str());
 }
+int product_transport(const char* method,const char* path,const char* body,char* output,size_t capacity){
+    output[0]=0;Response response;
+    if(access.empty())return 401;
+    if(esp_timer_get_time()>=refresh_at){
+        auto body=body_for("refresh_token",refresh_token.c_str(),nullptr,nullptr,true);Response refreshed;bool change=false;
+        int status=request("/api/v1/auth/refresh",body.c_str(),refreshed);wipe(body.data(),body.size());
+        if(status!=200 || !tokens(refreshed,change)){clear_session();publish(Page::Login,"Sessão expirada. Entre novamente.");return 401;}
+    }
+    auto verb=strcmp(method,"PUT")==0?HTTP_METHOD_PUT:strcmp(method,"DELETE")==0?HTTP_METHOD_DELETE:strcmp(method,"POST")==0?HTTP_METHOD_POST:HTTP_METHOD_GET;
+    int code=request(path,body,response,true,verb);
+    if(response.data.size()>=capacity)return -1;
+    snprintf(output,capacity,"%s",response.data.c_str());
+    if(code==401){clear_session();publish(Page::Login,"Sessão expirada. Entre novamente.");}
+    return code;
+}
 void worker(void*) {
     // P4 has no local RF entropy source. ADC is reserved for RNG in this profile.
     bootloader_random_enable();
@@ -250,6 +268,10 @@ void worker(void*) {
     else publish(Page::Unlock,"Desbloqueie a rede com a senha do admin-local.");
     int64_t probe_at=0;
     for(;;){
+        if(!access.empty()){
+            char permissions[512];xSemaphoreTake(view_lock,portMAX_DELAY);snprintf(permissions,sizeof(permissions),"%s",view.permissions);xSemaphoreGive(view_lock);
+            if(products_handle_next(permissions,settings.api,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport))continue;
+        }
         Command cmd{};
         if(xQueueReceive(commands,&cmd,pdMS_TO_TICKS(1000))!=pdTRUE){
             if(unlocked && wifi_started && settings.ssid[0] && !(xEventGroupGetBits(wifi_events)&1) && esp_timer_get_time()>=retry_at){
@@ -360,7 +382,12 @@ void pressed(lv_event_t* e){
     wipe(&cmd,sizeof(cmd));
 }
 void navigate_to(lv_event_t* e){auto target=static_cast<Page>(reinterpret_cast<uintptr_t>(lv_event_get_user_data(e)));publish(target,"Preencha os campos para continuar.");}
+void products_home(){browsing_products=false;publish(Page::Session,"Menu principal.");}
 void dashboard_action(DashboardAction action){
+    if(action==DashboardAction::Products){
+        static View snapshot;xSemaphoreTake(view_lock,portMAX_DELAY);snapshot=view;xSemaphoreGive(view_lock);
+        browsing_products=true;dashboard_hide();products_open(snapshot.permissions,snapshot.light);return;
+    }
     if(action==DashboardAction::Network){publish(Page::Configure,"Configure a rede e o servidor.");return;}
     if(action==DashboardAction::Password){publish(Page::Password,"Informe a senha atual e a nova senha ERP.");return;}
     Command cmd{};cmd.action=action==DashboardAction::Logout?Action::Logout:action==DashboardAction::Lock?Action::Lock:Action::Theme;
@@ -372,10 +399,10 @@ void render(lv_timer_t*) {
     if(next.serial==rendered_serial)return;
     if(next.page==Page::Session && next.authenticated){
         lv_obj_add_flag(panel,LV_OBJ_FLAG_HIDDEN);lv_obj_add_flag(home_button,LV_OBJ_FLAG_HIDDEN);
-        dashboard_show(next.identity,next.permissions,next.light,next.busy || strcmp(next.message,next.identity)==0?"":next.message);
+        if(!browsing_products)dashboard_show(next.identity,next.permissions,next.light,next.busy || strcmp(next.message,next.identity)==0?"":next.message);
         rendered=next.page;rendered_serial=next.serial;return;
     }
-    dashboard_hide();lv_obj_remove_flag(panel,LV_OBJ_FLAG_HIDDEN);
+    browsing_products=false;products_hide();dashboard_hide();lv_obj_remove_flag(panel,LV_OBJ_FLAG_HIDDEN);
     if(next.authenticated){lv_obj_remove_flag(home_button,LV_OBJ_FLAG_HIDDEN);}
     else lv_obj_add_flag(home_button,LV_OBJ_FLAG_HIDDEN);
     lv_group_set_default(input_group);
@@ -429,6 +456,7 @@ void authentication_start(lv_display_t* display,bool sd_writable){
     for(auto* input=lv_indev_get_next(nullptr);input;input=lv_indev_get_next(input))if(lv_indev_get_type(input)==LV_INDEV_TYPE_KEYPAD)lv_indev_set_group(input,input_group);
     home_button=lv_button_create(panel);lv_obj_set_pos(home_button,824,0);lv_obj_set_size(home_button,204,44);lv_label_set_text(lv_label_create(home_button),"Menu principal");lv_obj_add_event_cb(home_button,pressed,LV_EVENT_CLICKED,reinterpret_cast<void*>(static_cast<uintptr_t>(Action::Home)));lv_obj_add_flag(home_button,LV_OBJ_FLAG_HIDDEN);
     dashboard_create(display,dashboard_action);
+    products_create(display,products_home);
     lv_timer_create(render,100,nullptr);
     auto style_button=[](lv_obj_t* button){lv_obj_set_style_bg_color(button,lv_color_hex(0x334155),LV_PART_MAIN);lv_obj_set_style_bg_color(button,lv_color_hex(0x475569),LV_PART_MAIN|LV_STATE_PRESSED);lv_obj_set_style_text_color(button,lv_color_hex(0xf8fafc),LV_PART_MAIN);auto* text=lv_obj_get_child(button,0);lv_obj_set_style_text_color(text,lv_color_hex(0xf8fafc),0);lv_obj_center(text);};
     for(auto* button:buttons)style_button(button);
@@ -445,6 +473,6 @@ void authentication_start(lv_display_t* display,bool sd_writable){
     for(unsigned i=0;i<4;++i){lv_obj_add_flag(fields[i],LV_OBJ_FLAG_HIDDEN);lv_obj_add_flag(field_labels[i],LV_OBJ_FLAG_HIDDEN);lv_obj_add_flag(buttons[i],LV_OBJ_FLAG_HIDDEN);}
     publish(Page::Unlock,"Inicializando segurança. Aguarde...",true);
     render(nullptr);
-    if(xTaskCreate(worker,"erp-auth",12288,nullptr,5,nullptr)!=pdPASS)publish(Page::Unlock,"Memória insuficiente para iniciar autenticação.");
+    if(xTaskCreate(worker,"erp-auth",24576,nullptr,5,nullptr)!=pdPASS)publish(Page::Unlock,"Memória insuficiente para iniciar autenticação.");
 }
 }

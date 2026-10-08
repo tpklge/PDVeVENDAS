@@ -26,9 +26,12 @@ jobs:
           source /opt/esp/idf/export.sh
           idf.py set-target esp32p4
           idf.py build
+          cc -I "$IDF_PATH/components/json/cJSON" -c "$IDF_PATH/components/json/cJSON/cJSON.c" -o /tmp/cjson.o
+          g++ -std=c++17 -Wall -Wextra -Werror -I "$IDF_PATH/components/json/cJSON" tests/product_catalog_test.cpp /tmp/cjson.o -o /tmp/tab5-catalog
+          /tmp/tab5-catalog
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: tab5-erp-v0.4.0-usb
+          name: tab5-erp-v0.5.0-usb
           path: |
             firmware/build/tab5_erp.bin
             firmware/build/bootloader/bootloader.bin
