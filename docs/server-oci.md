@@ -7,7 +7,10 @@ Informações fornecidas pelo usuário em 08/10/2026:
 
 - Servidor OCI Ampere, arquitetura ARM64.
 - Ubuntu, kernel 6.17; versão possivelmente 24.04, ainda não confirmada.
-- Docker será instalado e executado no servidor na nuvem.
+- Docker será executado no servidor na nuvem; Traefik já instalado.
+- Servidor: ampere.diadiatech.com.br.
+- URL da API: https://tab5api.ampere.diadiatech.com.br.
+- Rede externa compartilhada com Traefik: meshcentral_proxy.
 - Repositório: https://github.com/tpklge/PDVeVENDAS.
 
 O kernel não identifica a versão do Ubuntu. Na sessão SSH do servidor, conferir:
@@ -21,13 +24,14 @@ free -h
 ```
 
 Esperado para arquitetura: `aarch64`. Registrar a versão do sistema antes de
-selecionar o repositório de instalação do Docker. Ainda faltam o domínio da API
-e um acesso SSH disponível para executar e validar a implantação real.
+selecionar o repositório de instalação do Docker, caso necessário. Ainda faltam
+os nomes do entrypoint/resolver do Traefik e um acesso SSH disponível para
+executar e validar a implantação real. Ver [integração Traefik](traefik.md).
 Não registrar senhas, chaves privadas ou tokens no repositório.
 
-A entrega desta etapa deve incluir Compose, MariaDB, API inicial, Caddy/HTTPS,
+A entrega desta etapa deve incluir Compose, MariaDB, API inicial, Traefik/HTTPS,
 schema inicial, migrações, healthchecks e scripts de instalação/backup/restauração.
-Usar imagens compatíveis com ARM64 e versões fixadas. Publicar somente 80/443;
+Usar imagens compatíveis com ARM64 e versões fixadas. O Traefik atende 80/443;
 manter o banco e a API na rede interna, com banco em volume persistente.
 
 Aprovação exige testes reais de inicialização, persistência, consulta da API,

@@ -8,7 +8,7 @@ flowchart LR
     K[Tab5 Keyboard / touch] --> F[Cliente C++ / ESP32-P4 / LVGL]
     F --> S[microSD: cache e fila futura]
     F --> N[NVS: configurações protegidas futuras]
-    F -->|HTTPS verificado via C6| P[Caddy na OCI Ampere ARM64]
+    F -->|HTTPS verificado via C6| P[Traefik existente na OCI Ampere ARM64]
     P --> A[FastAPI /api/v1]
     A -->|Rede Docker interna| D[MariaDB / InnoDB]
 ```

@@ -9,8 +9,9 @@ O servidor alvo é OCI Ampere ARM64. Docker Engine e Compose Plugin serão insta
 no servidor Ubuntu/Debian, conforme [Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
 e [Debian](https://docs.docker.com/engine/install/debian/). O Docker não foi instalado
 nem executado neste computador. O usuário informou Ubuntu, kernel 6.17, possivelmente
-Ubuntu 24.04; a versão ainda precisa ser confirmada. Domínio e acesso SSH ainda
-não informados. Ver [preparação OCI](server-oci.md).
+Ubuntu 24.04; a versão ainda precisa ser confirmada. A API usará
+`tab5api.ampere.diadiatech.com.br` atrás do Traefik existente. Acesso SSH ainda
+não informado. Ver [preparação OCI](server-oci.md) e [Traefik](traefik.md).
 
 Perfil inicial para medir: 2 vCPU, 2 GiB RAM e pelo menos 20 GiB de disco persistente.
 Não é uma garantia de capacidade. Registrar consumo após carga e backups reais.

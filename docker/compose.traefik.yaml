@@ -1,0 +1,23 @@
+# Complemento para o futuro compose.base.yaml (API + MariaDB, sem proxy próprio).
+# Não executar isoladamente: depende da definição do serviço api na base.
+services:
+  api:
+    networks:
+      - backend
+      - traefik
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "${TRAEFIK_NETWORK:?Informe a rede Docker existente do Traefik}"
+      traefik.http.routers.tab5-api.rule: "Host(`${API_DOMAIN:-tab5api.ampere.diadiatech.com.br}`)"
+      traefik.http.routers.tab5-api.entrypoints: "${TRAEFIK_HTTPS_ENTRYPOINT:?Informe o entrypoint HTTPS existente}"
+      traefik.http.routers.tab5-api.tls: "true"
+      traefik.http.routers.tab5-api.tls.certresolver: "${TRAEFIK_CERTRESOLVER:?Informe o resolver ACME existente}"
+      traefik.http.routers.tab5-api.service: tab5-api
+      traefik.http.services.tab5-api.loadbalancer.server.port: "8000"
+      traefik.http.services.tab5-api.loadbalancer.server.scheme: http
+networks:
+  backend:
+    internal: true
+  traefik:
+    external: true
+    name: "${TRAEFIK_NETWORK:?Informe a rede Docker existente do Traefik}"

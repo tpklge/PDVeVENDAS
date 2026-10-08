@@ -3,7 +3,7 @@
 | Versão | Branch | Entrega / condição de aprovação |
 |---|---|---|
 | 0.1.0 | release/v0.1.0-platform | BSP/LVGL/teclado/touch/SD; compilar e testar na placa |
-| 0.2.0 | release/v0.2.0-database | MariaDB/API/Caddy na OCI ARM64; TLS e backup/restore reais |
+| 0.2.0 | release/v0.2.0-database | MariaDB/API/Traefik existente na OCI ARM64; TLS e backup/restore reais |
 | 0.3.0 | release/v0.3.0-authentication | Primeiro boot, Wi-Fi, admin-local, login/RBAC; credenciais protegidas |
 | 0.4.0 | release/v0.4.0-interface | Dashboard, temas, navegação e formulários sem bloqueio de rede |
 | 0.5.0 | release/v0.5.0-products | Produtos, preços/categorias, consultas e cache paginado |
