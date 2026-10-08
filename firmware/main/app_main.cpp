@@ -29,6 +29,8 @@ extern "C" void app_main() {
         // Product forms exceed LVGL's default 64 KiB pool. Keep the extra
         // UI storage in PSRAM, preserving internal RAM for DMA and Wi-Fi.
         constexpr size_t ui_pool_bytes = 512 * 1024;
+        static_assert(LV_MEM_SIZE + LV_MEM_POOL_EXPAND_SIZE >= ui_pool_bytes,
+                      "LVGL TLSF must support the PSRAM UI pool size");
         void* ui_pool = heap_caps_malloc(ui_pool_bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
         if (!ui_pool || !lv_mem_add_pool(ui_pool, ui_pool_bytes)) {
             heap_caps_free(ui_pool);

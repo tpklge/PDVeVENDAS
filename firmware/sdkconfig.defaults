@@ -41,3 +41,6 @@ CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_FULL=y
 
 # Tab5 radio is ESP32-C6; generic ESP32 selection aborts on slave handshake.
 CONFIG_SLAVE_IDF_TARGET_ESP32C6=y
+
+# Permit the PSRAM-backed interface pool in LVGL TLSF.
+CONFIG_LV_MEM_POOL_EXPAND_SIZE_KILOBYTES=512
