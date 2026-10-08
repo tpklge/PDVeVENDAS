@@ -1,0 +1,91 @@
+name: tab5-erp
+x-api: &api
+  build:
+    context: ..
+    dockerfile: docker/api.Dockerfile
+  image: tab5-erp-api:0.2.0
+  restart: unless-stopped
+  networks: [backend]
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  read_only: true
+  tmpfs: [/tmp]
+  mem_limit: ${API_MEMORY_LIMIT:-512m}
+  cpus: ${API_CPU_LIMIT:-1.0}
+  labels:
+    traefik.enable: "false"
+  logging: &logs
+    driver: json-file
+    options: {max-size: "10m", max-file: "3"}
+services:
+  mariadb:
+    image: mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c
+    restart: unless-stopped
+    labels:
+      traefik.enable: "false"
+    environment:
+      MARIADB_DATABASE: tab5_erp
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      TZ: UTC
+    secrets: [db_root_password, db_app_password, db_migration_password]
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./mariadb/conf.d:/etc/mysql/conf.d:ro
+      - ./mariadb/init:/docker-entrypoint-initdb.d:ro
+      - ../database/schema.sql:/docker-entrypoint-initdb.d/003-schema.sql:ro
+      - ../database/initial_data.sql:/docker-entrypoint-initdb.d/004-initial-data.sql:ro
+    networks: [backend]
+    mem_limit: ${DB_MEMORY_LIMIT:-768m}
+    cpus: ${DB_CPU_LIMIT:-1.0}
+    logging: *logs
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+  migrate:
+    <<: *api
+    restart: "no"
+    environment:
+      DB_USER: tab5_migrator
+      DB_PASSWORD_FILE: /run/secrets/db_migration_password
+    secrets: [db_migration_password]
+    command: [sh, -ec, "alembic upgrade head && python -m app.cli seed"]
+    depends_on:
+      mariadb: {condition: service_healthy}
+  api:
+    <<: *api
+    environment:
+      DB_USER: tab5_app
+      DB_PASSWORD_FILE: /run/secrets/db_app_password
+    secrets: [db_app_password]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [backend, traefik]
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "${TRAEFIK_NETWORK:-meshcentral_proxy}"
+      traefik.http.routers.tab5-api.rule: "Host(`${API_DOMAIN:-tab5api.ampere.diadiatech.com.br}`)"
+      traefik.http.routers.tab5-api.entrypoints: "${TRAEFIK_HTTPS_ENTRYPOINT:-websecure}"
+      traefik.http.routers.tab5-api.tls: "true"
+      traefik.http.routers.tab5-api.tls.certresolver: "${TRAEFIK_CERTRESOLVER:-letsecnrypt}"
+      traefik.http.routers.tab5-api.service: tab5-api
+      traefik.http.services.tab5-api.loadbalancer.server.port: "8000"
+      traefik.http.services.tab5-api.loadbalancer.server.scheme: http
+networks:
+  backend: {internal: true}
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-meshcentral_proxy}
+volumes:
+  db_data: {}
+secrets:
+  db_root_password: {file: ./secrets/db_root_password}
+  db_app_password: {file: ./secrets/db_app_password}
+  db_migration_password: {file: ./secrets/db_migration_password}

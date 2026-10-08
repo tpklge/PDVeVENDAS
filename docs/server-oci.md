@@ -40,6 +40,8 @@ Aprovação exige testes reais de inicialização, persistência, consulta da AP
 certificado HTTPS, ausência de porta pública do banco e backup/restauração.
 Nenhum desses testes de servidor foi executado nesta preparação.
 
-A implementação de backend previamente preparada continua preservada na branch
-local `work/backend-preparation`; a integração ocorrerá conforme o escopo 0.2.0,
-sem antecipar o módulo de autenticação da etapa 0.3.0.
+A fundação de backend preparada foi integrada nesta branch para fornecer a stack
+solicitada pelo usuário, incluindo schema e API. Ver [stack](../docker/README.md).
+Isso não conclui a etapa 0.2.0 antes da validação real no servidor, nem a etapa
+0.3.0 de assistente/login no dispositivo. A preparação original continua
+preservada na branch local `work/backend-preparation`.

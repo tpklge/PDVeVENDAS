@@ -7,9 +7,10 @@ O Traefik já instalado será o proxy HTTPS da API. Ele mantém seu próprio res
 ACME e armazenamento persistente de certificados. A implantação ERP não inicia
 outro Traefik/Caddy e não precisa copiar certificados para o container da API.
 
-`docker/compose.traefik.yaml` contém as labels e a rede externa compartilhada.
-É um complemento, não uma implantação completa: o Compose base com API/MariaDB
-ainda será integrado na etapa 0.2.0. O serviço API deverá escutar em 8000, sem
+`docker/compose.yaml` contém a stack completa, com SQL, MariaDB, migrações,
+API e labels do Traefik. Ver [instruções da stack](../docker/README.md).
+O complemento anterior `docker/compose.traefik.yaml` é apenas referência e não
+precisa ser combinado com a stack completa. O serviço API escuta em 8000, sem
 publicar essa porta no host. O MariaDB participa somente da rede backend interna.
 O Traefik precisa ter o provider Docker habilitado e acesso à rede compartilhada.
 Este modelo é para Docker Compose; uma instalação Swarm exige adaptação ao

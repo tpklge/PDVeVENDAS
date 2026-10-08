@@ -1,0 +1,9 @@
+[mariadb]
+character-set-server=utf8mb4
+collation-server=utf8mb4_unicode_ci
+default-storage-engine=InnoDB
+default-time-zone=+00:00
+max_connections=40
+innodb_buffer_pool_size=256M
+skip-name-resolve
+local-infile=0

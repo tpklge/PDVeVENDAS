@@ -1,0 +1,3 @@
+-- Definições de RBAC ficam em initial_data.sql e api/app/seed.py.
+-- Privilégios SQL são provisionados por docker/mariadb/init/002-users.sh.
+-- Não existem senhas constantes neste repositório.
