@@ -64,8 +64,7 @@ Para restauração, usar uma instância dedicada vazia, com as mesmas credenciai
 SQL e schema compatível. O script exige `--confirm-replace`, interrompe a API e
 importa o dump; não remove tabelas extras existentes. Não restaurar sobre uma
 base divergente de produção. Executar migrações, validar e reativar a API após
-restaurar. Backup/restauração em MariaDB real passaram no CI; a execução final
-no OCI ainda precisa ser registrada.
+restaurar. Backup/restauração em MariaDB real passaram no CI e no OCI.
 
 No Portainer, o editor de stack sozinho não contém os arquivos locais nem o
 contexto de build. Use o pacote completo no servidor e os comandos acima, ou
@@ -75,8 +74,8 @@ Compose, não Swarm.
 
 Validação local: 10 testes da API/fundação aprovados usando SQLite. CI com Docker
 e MariaDB reais passou em AMD64 e ARM64, incluindo persistência e restauração.
-O usuário comprovou implantação e HTTPS válido no OCI; falta a execução final
-do script abaixo no servidor. Ele causa breve interrupção ao recriar os containers
+O usuário comprovou implantação, HTTPS válido, persistência e restauração no OCI.
+O script abaixo causa breve interrupção ao recriar os containers
 e preserva o volume. Restaura o backup em banco temporário sem rede, compara
 schema/dados, remove os recursos temporários e preserva o backup gerado.
 

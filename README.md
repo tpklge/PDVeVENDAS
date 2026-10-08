@@ -5,8 +5,8 @@ Especificação integral: [docs/REQUISITOS_RECEBIDOS.md](docs/REQUISITOS_RECEBID
 
 A etapa atual é **v0.2.0 — infraestrutura**, na branch `release/v0.2.0-database`.
 API/MariaDB e HTTPS via Traefik existente foram comprovados pelo usuário no OCI.
-CI com MariaDB real aprovou persistência e restauração em AMD64/ARM64; falta a
-verificação final no OCI para aprovação da etapa. Ver [stack](docker/README.md)
+CI com MariaDB real aprovou persistência e restauração em AMD64/ARM64; a
+verificação final no OCI também passou. Etapa aprovada. Ver [stack](docker/README.md)
 e [relatório](docs/releases/v0.2.0.md).
 
 O firmware permanece em **v0.1.1 — plataforma Tab5**.
