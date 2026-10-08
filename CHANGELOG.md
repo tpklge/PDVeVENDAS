@@ -1,5 +1,12 @@
 # Histórico
 
+## 0.4.0 — interface principal (candidata)
+
+- Dashboard, menus, navegação por toque/teclado e sessão integrada.
+- Temas claro/escuro persistidos no microSD e indicadores Wi-Fi/API.
+- Módulos comerciais sinalizados como indisponíveis; sem dados fictícios.
+- Etapa 0.3 validada no dispositivo: login, PIN e persistência microSD.
+
 ## 0.3.2 — senha ERP simplificada (candidata)
 
 - ERP aceita 8 caracteres, sem requisitos de composição.

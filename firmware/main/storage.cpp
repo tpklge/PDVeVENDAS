@@ -33,7 +33,7 @@ esp_err_t storage_start(PlatformStatus& status) {
     }
     file = fopen(path, "a");
     if (!file) return status.sd_error = ESP_FAIL;
-    ok = fputs("v0.3.2: plataforma iniciou; microSD gravável\n", file) >= 0;
+    ok = fputs("v0.4.0: plataforma iniciou; microSD gravável\n", file) >= 0;
     ok = fflush(file) == 0 && ok;
     ok = fsync(fileno(file)) == 0 && ok;
     ok = fclose(file) == 0 && ok;
