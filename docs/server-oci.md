@@ -12,6 +12,7 @@ Informações fornecidas pelo usuário em 08/10/2026:
 - URL da API: https://tab5api.ampere.diadiatech.com.br.
 - Rede externa compartilhada com Traefik: meshcentral_proxy.
 - Resolver ACME informado: letsecnrypt (grafia preservada).
+- Entrypoint HTTPS definido: websecure.
 - Repositório: https://github.com/tpklge/PDVeVENDAS.
 
 O kernel não identifica a versão do Ubuntu. Na sessão SSH do servidor, conferir:
@@ -25,8 +26,8 @@ free -h
 ```
 
 Esperado para arquitetura: `aarch64`. Registrar a versão do sistema antes de
-selecionar o repositório de instalação do Docker, caso necessário. Ainda faltam
-o nome do entrypoint HTTPS do Traefik e um acesso SSH disponível para
+selecionar o repositório de instalação do Docker, caso necessário. Ainda falta
+um acesso SSH disponível para
 executar e validar a implantação real. Ver [integração Traefik](traefik.md).
 Não registrar senhas, chaves privadas ou tokens no repositório.
 

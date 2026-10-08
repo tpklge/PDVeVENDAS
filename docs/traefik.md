@@ -20,8 +20,9 @@ Resolver informado pelo usuário no valor da label
 `traefik.http.routers.traefik-dashboard.tls.certresolver`: `letsecnrypt`.
 Preservar essa grafia, pois o identificador deve coincidir com a configuração
 existente do Traefik.
-Preencher a variável vazia `TRAEFIK_HTTPS_ENTRYPOINT` de
-`docker/.env.traefik.example` com o nome real do entrypoint HTTPS. Não é necessário
+Entrypoint HTTPS definido pelo usuário: `websecure`. Os parâmetros estão
+preenchidos em `docker/.env.traefik.example`; conferir sua correspondência com
+a instalação existente durante a implantação. Não é necessário
 alterar o Traefik para acrescentar um resolver se já houver um configurado.
 
 Criar o registro DNS de `tab5api.ampere.diadiatech.com.br` apontando ao endereço
