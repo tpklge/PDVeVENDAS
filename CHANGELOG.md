@@ -1,10 +1,12 @@
 # Histórico
 
-## 0.5.0 — produtos (candidata)
+## 0.5.0 — produtos validada
 
 - Cadastro, edição, filtros, categorias, preços e inativação na API e Tab5.
 - Migração incremental, preços decimais, GTIN e concorrência por versão.
 - Cache paginado no microSD, consultas sem rede e gravação apenas na API.
+- Pool LVGL e buffers de tela na PSRAM: corrige travamento no boot e falta de DMA após Wi-Fi.
+- Usuário validou cadastro, consulta, reinício, edição, desativação/reativação e filtros em 08/10/2026.
 - Etapa 0.4 validada fisicamente pelo usuário.
 
 ## 0.4.0 — interface principal (candidata)
