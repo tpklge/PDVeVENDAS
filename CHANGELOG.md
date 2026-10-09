@@ -1,11 +1,13 @@
 # Histórico
 
-## 0.6.0 — clientes e fornecedores (candidata)
+## 0.6.0 — clientes e fornecedores validada
 
 - Cadastros online, pesquisa paginada, edição, status e histórico de alterações.
 - CPF/CNPJ opcionais, validação numérica/alfanumérica e permissões documentais.
 - Dados pessoais apenas em RAM no Tab5; nenhum cache de contatos no microSD.
 - Vínculos de fornecedores com produtos; migração incremental preserva dados.
+- Mensagens identificam CPF/CNPJ e CEP inválidos; 21 testes de API aprovados.
+- Usuário confirmou cadastro, pesquisa, edição, inativação e reativação em ambos os módulos.
 - Etapa 0.5 validada fisicamente pelo usuário.
 
 ## 0.5.0 — produtos validada
