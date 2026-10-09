@@ -10,6 +10,7 @@
 - Journals existentes preservados; fila serial por módulo e retentativas explícitas.
 - Migração aditiva 008_offline; backup, dados e credenciais preservados.
 - 49 testes de API; testes reais de criptografia, corrupção, vínculo e recuperação.
+- CI MariaDB AMD64/ARM64, backup/restore, firmware e armazenamento aprovados (1fc24de).
 
 ## 0.10.0 — relatórios validados pelo usuário
 
