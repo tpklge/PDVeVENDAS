@@ -9,7 +9,8 @@
 - PIN, credenciais, conexão Wi-Fi/TLS, dados e microSD preservados.
 - Atualização com backup e validação de segurança pela versão esperada.
 - Documentação de instalação/recuperação e limites funcionais consolidada.
-- Testes finais e publicação serão registrados no relatório da release.
+- 68 testes API, CI MariaDB AMD64/ARM64, backup/restore e firmware aprovados (9bff721).
+- Distribuição estável v1.0.0, com OTA, ZIP incremental e arquivos SHA-256.
 
 
 ## 0.12.0 — segurança e estabilidade implementadas e testadas

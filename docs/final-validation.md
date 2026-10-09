@@ -7,15 +7,15 @@ Não substituir confirmação física por testes nativos ou build.
 
 | Critérios finais da especificação | Evidência atual | Fechamento |
 |---|---|---|
-| 1–4: boot, paisagem, teclado, touch | Plataforma e uso dos módulos aprovados pelo usuário | Repetir boot/navegação com OTA 0.12 |
+| 1–4: boot, paisagem, teclado, touch | Plataforma e uso dos módulos aprovados pelo usuário | Repetir boot/navegação com OTA 1.0 |
 | 5–9: Wi-Fi/API, HTTPS, PIN e login | Conexão e sessão ERP aprovadas nas etapas anteriores; HTTPS OCI válido | Novo TLS 3.6.7 precisa conectar no Tab5 |
 | 10: permissões | 68 testes API, todas as rotas comerciais sem token, alteração de papéis e usuário inativo | CI da release aprovado |
 | 11–13: Compose, schema e persistência | OCI confirmado; MariaDB nativo AMD64/ARM64 e restore isolado | validate-security.sh no OCI após atualização |
-| 14–20: produtos, clientes, vendas, pagamentos, estoque, caixa, relatórios | Etapas 0.5–0.10 aprovadas pelo usuário; testes transacionais/concorrentes | Uma venda/caixa com OTA/API 0.12 |
+| 14–20: produtos, clientes, vendas, pagamentos, estoque, caixa, relatórios | Etapas 0.5–0.10 aprovadas pelo usuário; testes transacionais/concorrentes | Uma venda/caixa com OTA/API 1.0 |
 | 21–23: cache, interrupções e idempotência | Rascunho reiniciado explicitamente confirmado; aprovação geral 0.11; replay/conflitos no CI | Conferir rascunho após novo OTA |
 | 24–25: rollback e segredos | Falhas injetadas revertem pagamentos/estoque/auditoria; scanners/hashes sem credenciais publicadas | CI final aprovado |
-| 26–27: branches e tags/CHANGELOG | Branches remotas 0.1–0.12; CHANGELOG coerente; nenhuma tag 1.0 criada | Branch/tag 1.0 só após homologação |
-| 28–30: instalação, builds e limitações | installation/security/recovery atualizados; imagens/pacotes/SDK/componentes fixados; build local e CI | Reunir resultados e artefatos da estável |
+| 26–27: branches e tags/CHANGELOG | Branches remotas 0.1–0.12 e release/v1.0.0-stable; CHANGELOG coerente | Distribuição v1.0.0 autorizada; CI aprovado |
+| 28–30: instalação, builds e limitações | installation/security/recovery atualizados; imagens/pacotes/SDK/componentes fixados; build local e CI | Resultados e artefatos em releases/v1.0.0.md |
 
 Registre a saída de validate-security.sh, versão/hash do BIN e resultado do uso
 no Tab5. Esses registros podem vir da confirmação do usuário; não solicitar senhas
@@ -36,5 +36,5 @@ usuário; sem cartão não existe configuração para login nem fila financeira 
 PIN curto aprovado pelo usuário; guardar cartão e backups em local protegido.
 
 A consolidação usa release/v1.0.0-stable, versões/notas e artefatos 1.0.0.
-A tag é publicada depois dos testes automatizados da release; links/resultados em
+Os testes automatizados da versão 1.0 foram aprovados no commit 9bff721; links/resultados em
 releases/v1.0.0.md. Não altera dados comerciais nem provisiona novamente a instalação.
