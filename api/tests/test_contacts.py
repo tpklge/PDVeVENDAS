@@ -98,7 +98,8 @@ def test_upgrade_preserves_previous_users_products_and_roles(tmp_path, monkeypat
         admin_role=Role(name='Administrador',permissions=permissions)
         custom=Role(name='Personalizado',permissions=[permissions[0]])
         db.add_all([admin_role,custom,User(username='original',password_hash=hasher.hash(PASSWORD),roles=[admin_role],must_change_password=False)])
-        db.add(Product(sku='EXISTING',name='Produto existente',sale_price='190',cost_price='123',stock=0,stock_min=0))
+        from conftest import legacy_product
+        legacy_product(db,sku='EXISTING',name='Produto existente',sale_price='190',cost_price='123',stock=0,stock_min=0)
     command.upgrade(config,'head')
     command.upgrade(config,'head')
     with factory() as db:

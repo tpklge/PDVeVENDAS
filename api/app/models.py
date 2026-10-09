@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table, Text, Numeric, CheckConstraint, UniqueConstraint
 from decimal import Decimal
+from uuid import uuid4
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -96,6 +97,7 @@ class CatalogState(Base):
     __tablename__ = "catalog_state"
     id: Mapped[int] = mapped_column(primary_key=True)
     revision: Mapped[int] = mapped_column(default=1)
+    epoch: Mapped[str] = mapped_column(String(36), default=lambda: str(uuid4()))
 
 
 class Product(Base):
@@ -103,6 +105,7 @@ class Product(Base):
     __table_args__ = (CheckConstraint("cost_price >= 0 AND sale_price >= 0", name="ck_product_prices"),
                      CheckConstraint("stock >= 0 AND stock_min >= 0", name="ck_product_stock"))
     id: Mapped[int] = mapped_column(primary_key=True)
+    sync_revision: Mapped[int] = mapped_column(default=1, index=True)
     sku: Mapped[str] = mapped_column(String(32), unique=True)
     barcode: Mapped[str | None] = mapped_column(String(14), unique=True)
     name: Mapped[str] = mapped_column(String(120), index=True)

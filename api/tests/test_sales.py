@@ -134,7 +134,8 @@ def test_incremental_sales_migration_preserves_contacts_and_opening_stock(tmp_pa
     factory=sessionmaker(bind=engine)
     with factory.begin() as db:
         db.add(User(username='original',password_hash=hasher.hash(PASSWORD),must_change_password=False))
-        db.add(Product(sku='BEFORE-PDV',name='Produto anterior',sale_price='190',cost_price='123',stock='2.500',stock_min=0))
+        from conftest import legacy_product
+        legacy_product(db,sku='BEFORE-PDV',name='Produto anterior',sale_price='190',cost_price='123',stock='2.500',stock_min=0)
         db.add(Contact(kind='customer',name='Cliente anterior',person_type='PF',document=None))
     command.upgrade(config,'head')
     command.upgrade(config,'head')

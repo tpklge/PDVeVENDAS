@@ -3,10 +3,12 @@
 ERP comercial e PDV nativo para M5Stack Tab5, em desenvolvimento incremental.
 Especificação integral: [docs/REQUISITOS_RECEBIDOS.md](docs/REQUISITOS_RECEBIDOS.md).
 
-A etapa **v0.10.0 — relatórios** está implementada em `release/v0.10.0-reports`,
-aguardando validação física. Vendas, vendedor, produtos, formas, cancelamentos,
-estoque, caixa e contas; filtros por período e totais na API. Ver
-[implantação e operação](docs/releases/v0.10.0.md).
+A etapa **v0.11.0 — offline e sincronização** está implementada em
+`release/v0.11.0-offline`, aguardando validação física. Catálogo criptografado no
+microSD, atualizações incrementais, acesso local limitado e rascunhos persistentes.
+Vendas definitivas continuam exigindo confirmação da API. Ver
+[implantação e operação](docs/releases/v0.11.0.md).
+O usuário confirmou os relatórios e a atualização 0.10.0.
 O usuário confirmou abertura, duas vendas e fechamento de caixa na 0.9.0,
 e percebeu desbloqueio mais rápido. API exige caixa aberto para novas vendas.
 O firmware tem primeiro boot, desbloqueio local, configuração criptografada,
@@ -21,7 +23,7 @@ CI com MariaDB real aprovou persistência e restauração em AMD64/ARM64; a
 verificação final no OCI também passou. Etapa aprovada. Ver [stack](docker/README.md)
 e [relatório](docs/releases/v0.2.0.md).
 
-O último firmware confirmado pelo usuário é **v0.9.0**, mantendo a plataforma validada em v0.1.1.
+O último firmware confirmado pelo usuário é **v0.10.0**, mantendo a plataforma validada em v0.1.1.
 Display/LVGL, teclado I²C, touchscreen, menu de diagnóstico e montagem não destrutiva
 do microSD estão implementados. O usuário confirmou instalação e as três telas no dispositivo; esta revisão corrige os acentos.
 A etapa 0.7 acrescenta vendas online e comprovantes não fiscais.

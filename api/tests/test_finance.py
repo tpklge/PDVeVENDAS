@@ -143,11 +143,12 @@ def test_cash_migration_preserves_historical_sales_without_inventing_receipts(tm
     engine=create_engine(uri);factory=sessionmaker(bind=engine)
     with factory.begin() as db:
         user=User(username='existing-admin',password_hash=hasher.hash(PASSWORD),must_change_password=False)
-        product_row=Product(sku='BEFORE-CASH',name='Produto histórico',sale_price='190',cost_price='123',stock='9',stock_min=0)
-        db.add_all([user,product_row]);db.flush()
+        from conftest import legacy_product
+        db.add(user);db.flush()
+        product_id=legacy_product(db,sku='BEFORE-CASH',name='Produto histórico',sale_price='190',cost_price='123',stock='9',stock_min=0)
         sale=Sale(user_id=user.id,device_id='old-terminal',idempotency_key='historical-sale-key-00001',request_hash='0'*64,subtotal='190',discount='0',total='190',tendered='200',change='10')
         db.add(sale);db.flush()
-        db.add(SaleItem(sale_id=sale.id,product_id=product_row.id,sku=product_row.sku,name=product_row.name,quantity='1',unit_price='190',discount='0',subtotal='190'))
+        db.add(SaleItem(sale_id=sale.id,product_id=product_id,sku='BEFORE-CASH',name='Produto histórico',quantity='1',unit_price='190',discount='0',subtotal='190'))
         db.add(SalePayment(sale_id=sale.id,method='cash',amount='200'))
     command.upgrade(config,'head');command.upgrade(config,'head')
     with factory() as db:

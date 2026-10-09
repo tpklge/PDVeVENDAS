@@ -46,3 +46,14 @@ def environment(tmp_path, monkeypatch):
         yield client, factory
     app.dependency_overrides.clear()
     engine.dispose()
+
+
+def legacy_product(db, **values):
+    """Insert using the historical schema, not columns introduced by later ORM models."""
+    from sqlalchemy import MetaData, Table, insert
+    from app.models import utcnow
+    defaults = dict(description='', unit='UN', cost_price=0, stock=0, stock_min=0,
+                    active=True, version=1, created_at=utcnow(), updated_at=utcnow())
+    table = Table('products', MetaData(), autoload_with=db.connection())
+    result = db.execute(insert(table).values(**{**defaults, **values}))
+    return result.inserted_primary_key[0]

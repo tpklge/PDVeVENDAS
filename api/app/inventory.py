@@ -123,6 +123,7 @@ def adjust(body: Adjustment, user: Adjust, current: Current, db: Db, request: Re
     db.add(InventoryRequest(user_id=user.id, device_id=device, idempotency_key=body.idempotency_key,
                             request_hash=hashed, movement_id=row.id))
     product.stock = after
+    product.sync_revision = state.revision + 1
     product.version += 1
     product.updated_at = utcnow()
     state.revision += 1

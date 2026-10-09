@@ -88,7 +88,7 @@ def ready(db: Db):
 
 @app.get("/api/v1/system/status")
 def status():
-    return {"version": VERSION, "api_version": "v1", "capabilities": ["auth", "rbac", "products", "catalog_snapshot", "customers", "suppliers", "sales", "declared_payments", "inventory", "cash", "finance", "reports"], "commercial_operations": True}
+    return {"version": VERSION, "api_version": "v1", "capabilities": ["auth", "rbac", "products", "catalog_snapshot", "customers", "suppliers", "sales", "declared_payments", "inventory", "cash", "finance", "reports", "incremental_sync", "offline_drafts"], "commercial_operations": True}
 
 
 @app.post("/api/v1/auth/login")
@@ -196,3 +196,6 @@ app.include_router(finance_router)
 
 from .reports import router as reports_router
 app.include_router(reports_router)
+
+from .sync import router as sync_router
+app.include_router(sync_router)

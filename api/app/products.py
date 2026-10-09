@@ -150,7 +150,7 @@ def rename_category(category_id: int, body: CategoryInput, user: Edit, db: Db, r
     if not category:
         raise HTTPException(404, "Categoria não encontrada.")
     category.name = body.name
-    db.execute(update(Product).where(Product.category_id == category.id).values(version=Product.version + 1, updated_at=utcnow()))
+    db.execute(update(Product).where(Product.category_id == category.id).values(version=Product.version + 1, updated_at=utcnow(), sync_revision=state.revision + 1))
     state.revision += 1
     record(db, request, user, "categories.update", "categories", category.id)
     commit(db)
@@ -188,7 +188,7 @@ def get_product(product_id: int, user: Read, db: Db):
 @router.post("/products", status_code=201)
 def create_product(body: ProductInput, user: Create, db: Db, request: Request):
     state = lock_catalog(db)
-    product = Product()
+    product = Product(sync_revision=state.revision + 1)
     try:
         assign(db, product, body)
         db.add(product)
@@ -226,6 +226,7 @@ def edit_product(product_id: int, body: ProductEdit, user: Edit, db: Db, request
         raise HTTPException(409, "SKU ou código de barras já cadastrado.")
     if previous_stock != product.stock:
         db.add(StockMovement(product_id=product.id, user_id=user.id, kind="adjustment", quantity=product.stock-previous_stock, before=previous_stock, after=product.stock, reason="Ajuste autorizado no cadastro do produto"))
+    product.sync_revision = state.revision + 1
     product.version += 1
     product.updated_at = utcnow()
     state.revision += 1
@@ -243,6 +244,7 @@ def deactivate_product(product_id: int, user: Delete, db: Db, request: Request, 
     if product.version != version:
         raise HTTPException(409, "Produto alterado. Atualize antes de inativar.")
     product.active = False
+    product.sync_revision = state.revision + 1
     product.version += 1
     product.updated_at = utcnow()
     state.revision += 1

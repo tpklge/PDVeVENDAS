@@ -1,6 +1,17 @@
 # Histórico
 
-## 0.10.0 — relatórios implementados; validação física pendente
+## 0.11.0 — offline e sincronização implementados; validação física pendente
+
+- Catálogo incremental por revisão/epoch, incluindo preços, estoque e inativação.
+- Cache AES-GCM no microSD, registros vinculados ao snapshot/posição e footer SHA-256.
+- Último perfil offline limitado a produtos e rascunhos; sem persistir tokens/senha ERP.
+- Salvar/carregar/excluir rascunho por operador, API, dispositivo e PIN.
+- Rascunho vinculado à mesma tentativa durante finalização, sem recriar venda após reinício.
+- Journals existentes preservados; fila serial por módulo e retentativas explícitas.
+- Migração aditiva 008_offline; backup, dados e credenciais preservados.
+- 49 testes de API; testes reais de criptografia, corrupção, vínculo e recuperação.
+
+## 0.10.0 — relatórios validados pelo usuário
 
 - Doze relatórios nativos, filtros por período/IDs, totais SQL e paginação por revisão.
 - Fuso Cuiabá, dinheiro líquido de troco, cancelamentos e rateio exato de descontos.

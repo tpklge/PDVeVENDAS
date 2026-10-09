@@ -148,7 +148,7 @@ def finish(body:Finish,user:Create,current:Current,db:Db,request:Request):
         customer_id=body.customer_id,subtotal=gross,discount=discount,total=total,tendered=paid,change=paid-total)
     db.add(sale);db.flush()
     for line in lines:
-        product=line['product'];before=product.stock;product.stock-=line['quantity'];product.version+=1;product.updated_at=utcnow()
+        product=line['product'];before=product.stock;product.stock-=line['quantity'];product.version+=1;product.updated_at=utcnow();product.sync_revision=state.revision+1
         db.add(SaleItem(sale_id=sale.id,product_id=product.id,sku=product.sku,name=product.name,
             quantity=line['quantity'],unit_price=line['unit_price'],discount=line['discount'],subtotal=line['subtotal']))
         db.add(StockMovement(product_id=product.id,sale_id=sale.id,user_id=user.id,kind='sale',quantity=-line['quantity'],
@@ -203,7 +203,7 @@ def cancel(identity:int,body:Cancellation,user:Cancel,current:Current,db:Db,requ
     for item in sale.items:
         product=products[item.product_id];before=product.stock
         if before+item.quantity>Decimal('999999999999.999'):raise HTTPException(409,'Reposição excede limite de estoque. Operação não aplicada.')
-        product.stock+=item.quantity;product.version+=1;product.updated_at=utcnow()
+        product.stock+=item.quantity;product.version+=1;product.updated_at=utcnow();product.sync_revision=state.revision+1
         db.add(StockMovement(product_id=product.id,sale_id=sale.id,user_id=user.id,kind='cancellation',quantity=item.quantity,
             before=before,after=product.stock,reason=body.reason))
     sale.status='canceled';sale.canceled_by=user.id;sale.canceled_at=utcnow();sale.cancel_reason=body.reason

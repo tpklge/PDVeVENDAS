@@ -1,6 +1,8 @@
 #include "products.hpp"
 #include "product_catalog.hpp"
 #include "settings_file.hpp"
+#include "offline.hpp"
+#include "offline_catalog.hpp"
 #include "module_policy.hpp"
 #include "erp_fonts.h"
 #include "cJSON.h"
@@ -34,65 +36,59 @@ std::atomic<bool> cancel_requested{false};
 unsigned drawn=0;char gui_permissions[512]{};
 const char* labels[]={"SKU *","GTIN/EAN (opcional)","Nome *","Descrição","Categoria","Unidade *","Custo (R$)","Venda (R$) *","Estoque atual","Estoque mínimo","Estoque máximo (opcional)","NCM (opcional)","CEST (opcional)","Origem 0 a 8 (opcional)"};
 void publish(const char* text,bool busy=false){xSemaphoreTake(mutex,portMAX_DELAY);snprintf(view.message,sizeof(view.message),"%s",text);view.busy=busy;++view.serial;xSemaphoreGive(mutex);}
-std::string cache_path(const char* api){uint8_t hash[32];mbedtls_sha256(reinterpret_cast<const uint8_t*>(api),strlen(api),hash,0);char hex[65];for(unsigned i=0;i<32;++i)snprintf(hex+i*2,3,"%02x",hash[i]);return std::string("/sdcard/ERP/cache/products-")+hex+".jsonl";}
-FILE* open_cache(const std::string& path){FILE* file=fopen(path.c_str(),"rb");if(!file && errno==ENOENT)file=fopen((path+".bak").c_str(),"rb");return file;}
+std::string cache_path(const char*){return std::string("/sdcard/ERP/cache/catalog-")+offline_scope()+".enc";}
+std::string usable_cache(const std::string& path){if(catalog_path_valid(path))return path;if(catalog_path_valid(path+".bak"))return path+".bak";return {};}
 const char* error_text(int code,const char* response){
     static char text[256];auto* data=cJSON_Parse(response);const char* detail=json_text(cJSON_GetObjectItemCaseSensitive(data,"error"),"message");
     snprintf(text,sizeof(text),"%s",detail[0]?detail:code<=0?"Sem confirmação da API. Atualize antes de repetir a operação.":"API recusou a operação. Confira os dados e permissões.");cJSON_Delete(data);return text;
 }
+void cleanup_legacy_cache(const char* api){if(!api)return;uint8_t hash[32];mbedtls_sha256(reinterpret_cast<const uint8_t*>(api),strlen(api),hash,0);char hex[65];for(unsigned i=0;i<32;++i)snprintf(hex+i*2,3,"%02x",hash[i]);erase_settings_files(std::string("/sdcard/ERP/cache/products-")+hex+".jsonl");}
 bool sync_cache(const std::string& path,ProductTransport transport){
-    mkdir("/sdcard/ERP/cache",0755);
-    const auto temp=path+".tmp";FILE* file=fopen(temp.c_str(),"wb");if(!file){publish("microSD sem escrita. Cache anterior preservado.");return false;}
-    static char response[8193];unsigned after=0,revision=0,count=0;bool ok=true;
+    mkdir("/sdcard/ERP/cache",0755);auto base=usable_cache(path);CatalogHeader prior{};if(!base.empty()){CatalogFile old;if(old.read(base))prior=old.header;}
+    const auto delta_path=path+".delta",temp=path+".tmp";remove_settings_path(delta_path);
+    CatalogFile delta;static char response[16385];unsigned after=0,revision=0,count=0;bool ok=true;CatalogHeader target{};
     do{
         if(cancel_requested.load()){publish("Atualização interrompida. Cache anterior preservado.");ok=false;break;}
-        char url[180];if(revision)snprintf(url,sizeof(url),"/api/v1/products?limit=2&include_inactive=true&after_id=%u&revision=%u",after,revision);
-        else snprintf(url,sizeof(url),"/api/v1/products?limit=2&include_inactive=true&after_id=%u",after);
-        int code=transport("GET",url,nullptr,response,sizeof(response));
+        std::string url="/api/v1/sync/products?limit=2&since="+std::to_string(prior.revision)+"&after_id="+std::to_string(after);
+        if(revision)url+="&revision="+std::to_string(revision)+"&epoch="+std::string(target.epoch);else if(prior.revision)url+="&epoch="+std::string(prior.epoch);
+        int code=transport("GET",url.c_str(),nullptr,response,sizeof(response));
+        if(code==409&&!after&&prior.revision){prior=CatalogHeader{};base.clear();continue;}
         if(code!=200){publish(error_text(code,response));ok=false;break;}
         auto* data=cJSON_Parse(response);auto* items=cJSON_GetObjectItemCaseSensitive(data,"items");unsigned received=number(data,"revision");
-        if(!data || !cJSON_IsArray(items) || !received || (revision && revision!=received)){cJSON_Delete(data);publish("Resposta de catálogo inválida. Cache anterior preservado.");ok=false;break;}
-        if(!revision){revision=received;if(fprintf(file,"{\"format\":1,\"revision\":%u,\"time\":%lld}\n",revision,static_cast<long long>(time(nullptr)))<0)ok=false;}
-        cJSON* item; cJSON_ArrayForEach(item,items){static Product checked;if(!decode(item,checked) || ++count>10000){ok=false;break;}
-            char* line=cJSON_PrintUnformatted(item);if(!line || strlen(line)>6000 || fprintf(file,"%s\n",line)<0)ok=false;cJSON_free(line);if(!ok)break;}
-        auto* next=cJSON_GetObjectItemCaseSensitive(data,"next_id");unsigned next_id=cJSON_IsNumber(next)?next->valueint:0;
-        if(next_id && (next_id<=after || cJSON_GetArraySize(items)==0)){ok=false;}
-        after=next_id;cJSON_Delete(data);
-        if(!ok){publish("Catálogo excede limite ou contém dados inválidos. Cache anterior preservado.");break;}
-        char progress[128];snprintf(progress,sizeof(progress),"Atualizando cache: %u produtos recebidos...",count);publish(progress,true);
-    }while(after && ok);
-    bool complete=ok;
-    ok=fflush(file)==0&&ok;ok=fsync(fileno(file))==0&&ok;ok=fclose(file)==0&&ok;
-    if(ok)ok=commit_settings_temp(path);
-    if(complete&&!ok)publish("Falha ao gravar no microSD. Cache anterior preservado.");
-    if(!ok){remove_settings_path(temp);}
+        if(!data||number(data,"format")!=2||!cJSON_IsArray(items)||!received||(revision&&received!=revision)||strlen(json_text(data,"epoch"))!=36){cJSON_Delete(data);publish("Resposta incremental inválida. Cache preservado.");ok=false;break;}
+        if(!revision){revision=received;target.revision=received;target.time=time(nullptr);snprintf(target.epoch,sizeof(target.epoch),"%s",json_text(data,"epoch"));if(!delta.write(delta_path,target)){cJSON_Delete(data);publish("microSD sem escrita. Cache preservado.");ok=false;break;}}
+        unsigned last=after;cJSON* item;cJSON_ArrayForEach(item,items){unsigned id=number(item,"id");if(id<=last){ok=false;break;}last=id;char* line=cJSON_PrintUnformatted(item);if(!line||!delta.append(line)||++count>10000)ok=false;cJSON_free(line);if(!ok)break;}
+        auto* next=cJSON_GetObjectItemCaseSensitive(data,"next_id");unsigned next_id=cJSON_IsNumber(next)?next->valueint:0;auto* complete=cJSON_GetObjectItemCaseSensitive(data,"complete");if(!next||!cJSON_IsBool(complete)||cJSON_IsTrue(complete)==static_cast<bool>(next_id)||number(data,"since")!=static_cast<int>(prior.revision))ok=false;if(next_id&&(next_id!=last||next_id<=after))ok=false;after=next_id;cJSON_Delete(data);
+        if(!ok){publish("Catálogo inválido ou excede limite. Cache preservado.");break;}
+        char progress[140];snprintf(progress,sizeof(progress),"Sincronizando: %u produtos alterados | Base %u...",count,prior.revision);publish(progress,true);
+    }while((after||(!revision&&ok))&&ok);
+    if(ok){ok=delta.finish();}
+    if(ok){ok=catalog_path_valid(delta_path);}
+    if(ok){CatalogFile old,changes,merged;static char old_row[6002],new_row[6002];int old_rc=0,new_rc=-1;
+        if(!base.empty()){if(!old.read(base))ok=false;else old_rc=old.next(old_row,sizeof(old_row));}
+        if(!changes.read(delta_path)||!merged.write(temp,target))ok=false;else new_rc=changes.next(new_row,sizeof(new_row));
+        auto id=[](const char* row){auto* j=cJSON_Parse(row);int result=number(j,"id");cJSON_Delete(j);return result;};unsigned merged_count=0;
+        while(ok&&(old_rc>0||new_rc>0)){if(cancel_requested.load()){ok=false;break;}int old_id=old_rc>0?id(old_row):2147483647,new_id=new_rc>0?id(new_row):2147483647;
+            if(new_rc>0&&(old_rc<=0||new_id<=old_id)){ok=merged.append(new_row);if(old_rc>0&&old_id==new_id)old_rc=old.next(old_row,sizeof(old_row));new_rc=changes.next(new_row,sizeof(new_row));}
+            else{ok=merged.append(old_row);old_rc=old.next(old_row,sizeof(old_row));}if(old_rc<0||new_rc<0)ok=false;if((++merged_count&31)==0)vTaskDelay(1);
+        }
+        if(ok)ok=merged.finish();
+    }
+    if(ok){ok=catalog_path_valid(temp);if(ok&&base==path+".bak"&&access(path.c_str(),F_OK)==0){auto damaged=path+".damaged-"+std::to_string(time(nullptr));if(access(damaged.c_str(),F_OK)==0||rename(path.c_str(),damaged.c_str())!=0)ok=false;}if(ok)ok=commit_settings_temp(path);}
+    remove_settings_path(delta_path);
+    if(!ok){remove_settings_path(temp);publish("Sincronização não concluída. Cache anterior preservado; tente novamente.");}
     return ok;
 }
 bool browse(const std::string& path,const Command& cmd,bool online){
-    FILE* file=open_cache(path);if(!file){publish("Cache ausente. Conecte à API e use Atualizar cache.");return false;}
-    static char line[6002];bool ok=fgets(line,sizeof(line),file)!=nullptr;auto* header=ok?cJSON_Parse(line):nullptr;
-    if(number(header,"format")!=1 || number(header,"revision")<=0){cJSON_Delete(header);fclose(file);publish("Cache inválido. Atualize com a API.");return false;}
-    unsigned revision=number(header,"revision");auto* timestamp=cJSON_GetObjectItemCaseSensitive(header,"time");time_t saved=cJSON_IsNumber(timestamp)?static_cast<time_t>(timestamp->valuedouble):0;cJSON_Delete(header);
-    static View next;next=View{};next.page=cmd.page;next.mode=Mode::List;
-    auto search=folded(cmd.query),category_filter=folded(cmd.category);
-    while(fgets(line,sizeof(line),file)){
-        if(!strchr(line,'\n')){ok=false;break;}
-        auto* data=cJSON_Parse(line);static Product p;if(!decode(data,p)){cJSON_Delete(data);ok=false;break;}
-        bool match=(cmd.inactive||p.active) && (category_filter.empty()||folded(p.category)==category_filter) &&
-            (search.empty()||folded(p.sku).find(search)!=std::string::npos||folded(p.name).find(search)!=std::string::npos||search==p.barcode);
-        if(match){unsigned index=next.total++;if(index>=cmd.page*page_size && next.count<page_size){auto& row=next.rows[next.count++];row.id=p.id;row.active=p.active;row.low=cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(data,"stock_low"));
-            snprintf(row.sku,sizeof(row.sku),"%s",p.sku);snprintf(row.name,sizeof(row.name),"%s",p.name);snprintf(row.category,sizeof(row.category),"%s",p.category);snprintf(row.sale,sizeof(row.sale),"%s",p.sale);snprintf(row.stock,sizeof(row.stock),"%s",p.stock);}}
-        cJSON_Delete(data);
-    }
-    ok=!ferror(file)&&ok;fclose(file);if(!ok){publish("Cache corrompido. Atualize antes de consultar.");return false;}
-    char date[40]="sem data";tm when{};if(saved && gmtime_r(&saved,&when))strftime(date,sizeof(date),"%d/%m/%Y %H:%M UTC",&when);
-    snprintf(next.message,sizeof(next.message),"%s | Cache de %s | Revisão %u | Página %u | %u resultados",online?"Consulta local":"Sem rede: consulta local",date,revision,cmd.page+1,next.total);
-    xSemaphoreTake(mutex,portMAX_DELAY);next.serial=view.serial+1;view=next;xSemaphoreGive(mutex);return true;
+    auto usable=usable_cache(path);if(usable.empty()){publish("Cache ausente ou corrompido. Conecte à API e atualize.");return false;}
+    CatalogFile file;if(!file.read(usable))return false;static char line[6002];static View next;next=View{};next.page=cmd.page;next.mode=Mode::List;auto search=folded(cmd.query),category_filter=folded(cmd.category);int rc;
+    while((rc=file.next(line,sizeof(line)))>0){auto* data=cJSON_Parse(line);static Product p;bool decoded=decode(data,p);bool match=decoded&&(cmd.inactive||p.active)&&(category_filter.empty()||folded(p.category)==category_filter)&&(search.empty()||folded(p.sku).find(search)!=std::string::npos||folded(p.name).find(search)!=std::string::npos||search==p.barcode);
+        if(match){unsigned index=next.total++;if(index>=cmd.page*page_size&&next.count<page_size){auto& row=next.rows[next.count++];row.id=p.id;row.active=p.active;row.low=cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(data,"stock_low"));snprintf(row.sku,sizeof(row.sku),"%s",p.sku);snprintf(row.name,sizeof(row.name),"%s",p.name);snprintf(row.category,sizeof(row.category),"%s",p.category);snprintf(row.sale,sizeof(row.sale),"%s",p.sale);snprintf(row.stock,sizeof(row.stock),"%s",p.stock);}}cJSON_Delete(data);}
+    if(rc<0){publish("Cache corrompido. Atualize antes de consultar.");return false;}
+    char date[40]="sem data";tm when{};time_t saved=file.header.time;if(saved&&gmtime_r(&saved,&when))strftime(date,sizeof(date),"%d/%m/%Y %H:%M UTC",&when);
+    snprintf(next.message,sizeof(next.message),"%s | Cache de %s | Revisão %u | Página %u | %u resultados%s",online?"Consulta local":"OFFLINE: consulta local",date,file.header.revision,cmd.page+1,next.total,usable==path?"":" | Backup recuperado");xSemaphoreTake(mutex,portMAX_DELAY);next.serial=view.serial+1;view=next;xSemaphoreGive(mutex);return true;
 }
-bool select_cached(const std::string& path,int id,Product& product){
-    FILE* file=open_cache(path);if(!file)return false;static char line[6002];bool found=false;
-    while(fgets(line,sizeof(line),file)){auto* data=cJSON_Parse(line);if(number(data,"id")==id){found=decode(data,product);cJSON_Delete(data);break;}cJSON_Delete(data);}fclose(file);return found;
-}
+bool select_cached(const std::string&,int id,Product& product){static char line[6002];if(!offline_product_get(id,line,sizeof(line)))return false;auto* data=cJSON_Parse(line);bool ok=decode(data,product);cJSON_Delete(data);return ok;}
 void queue_command(Action action,unsigned page=0,int id=0){
     static Command cmd;cmd=Command{};cmd.action=action;cmd.page=page;cmd.id=id;
     snprintf(cmd.query,sizeof(cmd.query),"%s",lv_textarea_get_text(query));snprintf(cmd.category,sizeof(cmd.category),"%s",lv_textarea_get_text(category));cmd.inactive=lv_obj_has_state(inactive,LV_STATE_CHECKED);
@@ -178,8 +174,8 @@ bool products_handle_next(const char* permissions,const char* api,bool online,Pr
     if(!has_module_permission(permissions,"products.read")){publish("Sem permissão para consultar produtos.");return true;}
     publish("Aguarde...",true);auto path=cache_path(api);
     if(cmd.action==Action::Browse || cmd.action==Action::Refresh){
-        bool needs_sync=cmd.action==Action::Refresh;FILE* file=open_cache(path);if(!file)needs_sync=true;else fclose(file);
-        if(needs_sync){if(!online){publish("Sem rede. Não foi possível atualizar o cache.");if(file)browse(path,cmd,false);return true;}if(!sync_cache(path,transport))return true;}
+        bool has_cache=!usable_cache(path).empty();bool needs_sync=cmd.action==Action::Refresh||!has_cache;
+        if(needs_sync){if(!online){publish("Sem rede. Não foi possível atualizar o cache.");if(has_cache)browse(path,cmd,false);return true;}if(!sync_cache(path,transport))return true;cleanup_legacy_cache(api);}
         browse(path,cmd,online);return true;
     }
     if(cmd.action==Action::Select){static Product p;if(!select_cached(path,cmd.id,p)){publish("Produto não encontrado no cache. Atualize.");return true;}xSemaphoreTake(mutex,portMAX_DELAY);view.selected=p;view.mode=Mode::Detail;xSemaphoreGive(mutex);char detail[256];snprintf(detail,sizeof(detail),"Consulta do cache | Criado %s | Alterado %s",p.created,p.updated);publish(detail);return true;}
@@ -211,6 +207,8 @@ bool products_handle_next(const char* permissions,const char* api,bool online,Pr
         snprintf(url,sizeof(url),"/api/v1/products/%d?version=%d",id,version);code=transport("DELETE",url,nullptr,response,sizeof(response));if(code!=204){publish(error_text(code,response));return true;}
         xSemaphoreTake(mutex,portMAX_DELAY);view.selected.active=false;++view.selected.version;view.mode=Mode::Detail;xSemaphoreGive(mutex);
     }
-    bool cached=sync_cache(path,transport);publish(cached?"Operação confirmada pela API. Cache atualizado.":"Operação confirmada pela API. Cache anterior preservado; atualize o cache.");return true;
+    bool cached=sync_cache(path,transport);if(cached)cleanup_legacy_cache(api);publish(cached?"Operação confirmada pela API. Cache atualizado.":"Operação confirmada pela API. Cache anterior preservado; atualize o cache.");return true;
 }
+bool offline_product_get(int id,char* output,size_t capacity){auto path=usable_cache(cache_path(nullptr));if(path.empty())return false;CatalogFile file;if(!file.read(path))return false;static char row[6002];bool found=false;int rc;while((rc=file.next(row,sizeof(row)))>0){auto* j=cJSON_Parse(row);if(number(j,"id")==id&&strlen(row)<capacity){snprintf(output,capacity,"%s",row);found=true;}cJSON_Delete(j);}return rc==0&&found;}
+bool offline_product_search(const char* query,unsigned after,char* output,size_t capacity){auto path=usable_cache(cache_path(nullptr));if(path.empty())return false;CatalogFile file;if(!file.read(path))return false;auto* result=cJSON_CreateObject();auto* items=cJSON_AddArrayToObject(result,"items");static char row[6002];auto search=folded(query);unsigned count=0,last=0,next=0;int rc;while((rc=file.next(row,sizeof(row)))>0){auto* j=cJSON_Parse(row);unsigned id=number(j,"id");if(id>after&&cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(j,"active"))&&(search.empty()||folded(json_text(j,"name")).find(search)!=std::string::npos||folded(json_text(j,"sku")).find(search)!=std::string::npos||search==json_text(j,"barcode"))){if(count<8){auto* item=cJSON_CreateObject();cJSON_AddNumberToObject(item,"id",id);cJSON_AddStringToObject(item,"name",json_text(j,"name"));cJSON_AddStringToObject(item,"sale_price",json_text(j,"sale_price"));cJSON_AddItemToArray(items,item);last=id;}else next=last;++count;}cJSON_Delete(j);}if(next)cJSON_AddNumberToObject(result,"next_id",next);else cJSON_AddNullToObject(result,"next_id");char* raw=cJSON_PrintUnformatted(result);bool ok=rc==0&&raw&&strlen(raw)<capacity;if(ok)snprintf(output,capacity,"%s",raw);cJSON_free(raw);cJSON_Delete(result);return ok;}
 } // namespace tab5

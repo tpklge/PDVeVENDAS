@@ -3,7 +3,7 @@
 MariaDB 11.8.8/InnoDB/utf8mb4, UTC, Numeric/Decimal para dinheiro, chaves
 estrangeiras e índices. Cliente acessa somente API HTTPS; MariaDB sem porta pública.
 Usuários SQL de aplicação (CRUD) e migração (DDL) separados; sem administração global.
-Migrações Alembic incrementais até 007_reports. SQL equivalentes em database/migrations.
+Migrações Alembic incrementais até 008_offline. SQL equivalentes em database/migrations.
 Não reimportar schema.sql em instalações existentes nem apagar volumes para atualizar.
 
 Autenticação: users, roles, permissions, sessions e auditoria; produtos/categorias e
@@ -23,5 +23,10 @@ Procedimentos reais de backup/restauração em docker/scripts; atualizações de
 fazem backup antes da migração. CI testa MariaDB AMD64/ARM64 com concorrência e
 restauração isolada. Ver [regras e atualização 0.9](releases/v0.9.0.md).
 
-007_reports acrescenta somente índices de período, sem reescrever dados ou snapshots.
+008_offline acrescenta somente índices de período, sem reescrever dados ou snapshots.
 Relatórios usam agregações/janelas SQL e revisão para proteger a paginação.
+
+008_offline acrescenta sync_revision por produto (índice) e epoch no catálogo.
+Atualizações de produto/estoque/vendas/categorias gravam revisão na mesma transação.
+Depois de restauração em produção, renovar epoch antes de reativar API, evitando
+reutilização de revisões após rollback. Ver docker/scripts/invalidate-sync.sh.
