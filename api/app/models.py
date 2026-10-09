@@ -151,3 +151,74 @@ class SupplierProduct(Base):
     __tablename__ = "supplier_products"
     supplier_id: Mapped[int] = mapped_column(ForeignKey("contacts.id"), primary_key=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), primary_key=True)
+
+
+class Sale(Base):
+    __tablename__ = "sales"
+    __table_args__ = (UniqueConstraint("user_id", "device_id", "idempotency_key", name="uq_sale_request"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    device_id: Mapped[str] = mapped_column(String(80))
+    idempotency_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    customer_id: Mapped[int | None] = mapped_column(ForeignKey("contacts.id"), index=True)
+    status: Mapped[str] = mapped_column(String(16), default="completed")
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(14,2))
+    discount: Mapped[Decimal] = mapped_column(Numeric(14,2))
+    total: Mapped[Decimal] = mapped_column(Numeric(14,2))
+    tendered: Mapped[Decimal] = mapped_column(Numeric(14,2))
+    change: Mapped[Decimal] = mapped_column(Numeric(14,2))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    canceled_at: Mapped[datetime | None] = mapped_column(DateTime)
+    canceled_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    cancel_reason: Mapped[str | None] = mapped_column(String(240))
+    items: Mapped[list["SaleItem"]] = relationship(lazy="selectin")
+    payments: Mapped[list["SalePayment"]] = relationship(lazy="selectin")
+
+
+class SaleItem(Base):
+    __tablename__ = "sale_items"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sale_id: Mapped[int] = mapped_column(ForeignKey("sales.id"), index=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    sku: Mapped[str] = mapped_column(String(32))
+    name: Mapped[str] = mapped_column(String(120))
+    quantity: Mapped[Decimal] = mapped_column(Numeric(15,3))
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(12,2))
+    discount: Mapped[Decimal] = mapped_column(Numeric(14,2))
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(14,2))
+
+
+class SalePayment(Base):
+    __tablename__ = "sale_payments"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sale_id: Mapped[int] = mapped_column(ForeignKey("sales.id"), index=True)
+    method: Mapped[str] = mapped_column(String(24))
+    amount: Mapped[Decimal] = mapped_column(Numeric(14,2))
+    status: Mapped[str] = mapped_column(String(24), default="declared")
+
+
+class StockMovement(Base):
+    __tablename__ = "stock_movements"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), index=True)
+    sale_id: Mapped[int | None] = mapped_column(ForeignKey("sales.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    kind: Mapped[str] = mapped_column(String(24))
+    quantity: Mapped[Decimal] = mapped_column(Numeric(15,3))
+    before: Mapped[Decimal] = mapped_column(Numeric(15,3))
+    after: Mapped[Decimal] = mapped_column(Numeric(15,3))
+    reason: Mapped[str] = mapped_column(String(240))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class SaleRequest(Base):
+    __tablename__ = "sale_requests"
+    __table_args__ = (UniqueConstraint("user_id", "device_id", "idempotency_key", name="uq_sale_request_state"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    device_id: Mapped[str] = mapped_column(String(80))
+    idempotency_key: Mapped[str] = mapped_column(String(64))
+    state: Mapped[str] = mapped_column(String(16))
+    sale_id: Mapped[int | None] = mapped_column(ForeignKey("sales.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

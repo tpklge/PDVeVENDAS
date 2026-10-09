@@ -24,7 +24,7 @@ def test_contacts_crud_history_and_documents(environment):
         assert client.delete(f'/api/v1/{path}/{row["id"]}?version=2', headers=headers).status_code == 200
         assert not client.get('/api/v1/'+path,headers=headers).json()['items']
         history=client.get(f'/api/v1/{path}/{row["id"]}/history',headers=headers).json()
-        assert len(history['items']) == 3 and history['purchases_available'] is False
+        assert len(history['items']) == 3 and history['purchases_available'] is (path == 'customers')
         assert client.put(f'/api/v1/{path}/{row["id"]}',headers=headers,json={**body,'version':3,'active':True}).status_code == 200
     for bad in ('11111111111','52998224724','text'):
         assert client.post('/api/v1/customers',headers=headers,json={'name':'x','document':bad}).status_code == 422

@@ -1,5 +1,13 @@
 # Histórico
 
+## 0.7.0 — vendas / PDV implementada; validação física pendente
+
+- Carrinho, descontos autorizados, pagamentos mistos e troco em dinheiro.
+- Venda/estoque/pagamentos transacionais; repetição com chave idempotente.
+- Recuperação criptografada no microSD e resolução contra envio atrasado.
+- Histórico, compras por cliente e cancelamento comercial integral auditado.
+- Migração incremental preserva dados e registra saldo inicial de estoque.
+
 ## 0.6.0 — clientes e fornecedores validada
 
 - Cadastros online, pesquisa paginada, edição, status e histórico de alterações.

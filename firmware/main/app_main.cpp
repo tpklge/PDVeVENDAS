@@ -10,7 +10,7 @@ extern "C" void app_main() {
     static tab5::PlatformStatus status;
     esp_chip_info_t chip{};
     esp_chip_info(&chip);
-    ESP_LOGI("tab5_erp", "TAB5 ERP v0.6.0 | ESP-IDF %s | núcleos %d", esp_get_idf_version(), chip.cores);
+    ESP_LOGI("tab5_erp", "TAB5 ERP v0.7.0 | ESP-IDF %s | núcleos %d", esp_get_idf_version(), chip.cores);
     bsp_display_cfg_t display_config{};
     display_config.lvgl_port_cfg=ESP_LVGL_PORT_INIT_CONFIG();
     display_config.lvgl_port_cfg.task_stack=16384;

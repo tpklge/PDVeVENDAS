@@ -6,7 +6,7 @@ from pydantic import Field, field_validator
 from sqlalchemy import select, or_, delete
 from sqlalchemy.exc import IntegrityError
 from .dependencies import Db, Input, allowed
-from .models import Contact, SupplierProduct, Product, AuditLog, User, utcnow
+from .models import Contact, SupplierProduct, Product, Sale, AuditLog, User, utcnow
 
 router = APIRouter(prefix="/api/v1", tags=["contacts"])
 UF = set("AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split())
@@ -238,7 +238,17 @@ def register(module, kind):
             .order_by(AuditLog.id).limit(limit + 1)).all()
         return {"items": [{"id": e.id, "operation": e.operation, "created_at": e.created_at.isoformat() + "Z"} for e in events[:limit]],
                 "next_id": events[limit-1].id if len(events) > limit else None,
-                "purchases_available": False, "message": "Histórico de compras disponível na etapa de vendas; alterações cadastrais abaixo."}
+                "purchases_available": kind == "customer" and "sales.read" in codes(user), "message": "Alterações cadastrais abaixo; compras disponíveis na consulta do cliente."}
+
+    if kind == "customer":
+        @router.get("/customers/{identity}/purchases", name="customer_purchases")
+        def purchases(identity: int, user: Read, db: Db, after_id: int = Query(0, ge=0), limit: int = Query(8, ge=1, le=25)):
+            load(db, kind, identity)
+            if "sales.read" not in codes(user):
+                raise HTTPException(403, "Sem permissão para consultar vendas.")
+            from .sales import serialize
+            rows = db.scalars(select(Sale).where(Sale.customer_id == identity, Sale.id > after_id).order_by(Sale.id).limit(limit+1)).all()
+            return {"items": [serialize(row, False) for row in rows[:limit]], "next_id": rows[limit-1].id if len(rows)>limit else None}
 
 register("customers", "customer")
 register("suppliers", "supplier")

@@ -17,7 +17,7 @@ def test_health_and_migrations(environment):
     client, factory = environment
     assert client.get("/health/live").status_code == 200
     assert client.get("/health/ready").status_code == 200
-    assert client.get("/api/v1/system/status").json()["commercial_operations"] is False
+    assert client.get("/api/v1/system/status").json()["commercial_operations"] is True
     with factory() as db:
         assert len(list(db.scalars(select(Role)))) == 4
         assert len(list(db.scalars(select(Permission)))) == 32

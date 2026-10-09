@@ -6,7 +6,7 @@ from pydantic import Field, field_validator, model_validator
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from .dependencies import Db, Input, allowed
-from .models import AuditLog, CatalogState, Category, Product, User, utcnow
+from .models import AuditLog, CatalogState, Category, Product, StockMovement, User, utcnow
 
 router = APIRouter(prefix="/api/v1", tags=["products"])
 Read = Annotated[User, Depends(allowed("products.read"))]
@@ -196,6 +196,8 @@ def create_product(body: ProductInput, user: Create, db: Db, request: Request):
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "SKU ou código de barras já cadastrado.")
+    if product.stock:
+        db.add(StockMovement(product_id=product.id, user_id=user.id, kind="initial", quantity=product.stock, before=0, after=product.stock, reason="Estoque inicial do produto"))
     state.revision += 1
     record(db, request, user, "products.create", "products", product.id)
     commit(db)
@@ -215,12 +217,15 @@ def edit_product(product_id: int, body: ProductEdit, user: Edit, db: Db, request
         raise HTTPException(403, "Sem permissão para ajustar estoque.")
     if product.active and not body.active and "products.delete" not in codes:
         raise HTTPException(403, "Sem permissão para inativar produto.")
+    previous_stock = product.stock
     try:
         assign(db, product, body)
         db.flush()
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "SKU ou código de barras já cadastrado.")
+    if previous_stock != product.stock:
+        db.add(StockMovement(product_id=product.id, user_id=user.id, kind="adjustment", quantity=product.stock-previous_stock, before=previous_stock, after=product.stock, reason="Ajuste autorizado no cadastro do produto"))
     product.version += 1
     product.updated_at = utcnow()
     state.revision += 1
