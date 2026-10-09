@@ -14,9 +14,11 @@ def upgrade():
         sa.Column('device_id', sa.String(80), nullable=False),
         sa.Column('idempotency_key', sa.String(64), nullable=False),
         sa.Column('request_hash', sa.String(64), nullable=False),
-        sa.Column('movement_id', sa.Integer(), sa.ForeignKey('stock_movements.id'), nullable=False),
+        sa.Column('state', sa.String(16), nullable=False),
+        sa.Column('movement_id', sa.Integer(), sa.ForeignKey('stock_movements.id')),
         sa.Column('created_at', sa.DateTime(), nullable=False),
-        sa.UniqueConstraint('user_id', 'device_id', 'idempotency_key', name='uq_inventory_request'))
+        sa.UniqueConstraint('user_id', 'device_id', 'idempotency_key', name='uq_inventory_request'),
+        sa.CheckConstraint("state IN ('completed','abandoned')", name='ck_inventory_request_state'))
 
 
 def downgrade():

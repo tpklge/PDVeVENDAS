@@ -232,5 +232,6 @@ class InventoryRequest(Base):
     device_id: Mapped[str] = mapped_column(String(80))
     idempotency_key: Mapped[str] = mapped_column(String(64))
     request_hash: Mapped[str] = mapped_column(String(64))
-    movement_id: Mapped[int] = mapped_column(ForeignKey("stock_movements.id"))
+    state: Mapped[str] = mapped_column(String(16), default="completed")
+    movement_id: Mapped[int | None] = mapped_column(ForeignKey("stock_movements.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

@@ -97,6 +97,8 @@ def adjust(body: Adjustment, user: Adjust, current: Current, db: Db, request: Re
         InventoryRequest.user_id == user.id, InventoryRequest.device_id == device,
         InventoryRequest.idempotency_key == body.idempotency_key).with_for_update())
     if previous:
+        if previous.state == 'abandoned':
+            raise HTTPException(409, 'Tentativa encerrada. Consulte o saldo e gere nova tentativa.')
         if previous.request_hash != hashed:
             raise HTTPException(409, 'Chave já usada com outro movimento.')
         return {**movement(db.get(StockMovement, previous.movement_id)), 'replayed': True}
@@ -129,6 +131,28 @@ def adjust(body: Adjustment, user: Adjust, current: Current, db: Db, request: Re
     return {**movement(row), 'replayed': False}
 
 
+@router.post('/requests/{key}/resolve')
+def resolve(key: str, user: Adjust, current: Current, db: Db, request: Request):
+    import re
+    if not re.fullmatch(r'[A-Za-z0-9_-]{16,64}', key):
+        raise HTTPException(422, 'Identificador inválido.')
+    lock_catalog(db)
+    device = current[0].device_id
+    previous = db.scalar(select(InventoryRequest).where(
+        InventoryRequest.user_id == user.id, InventoryRequest.device_id == device,
+        InventoryRequest.idempotency_key == key).with_for_update())
+    if previous and previous.state == 'completed':
+        return {'state': 'completed', 'movement': movement(db.get(StockMovement, previous.movement_id))}
+    if not previous:
+        previous = InventoryRequest(user_id=user.id, device_id=device, idempotency_key=key,
+                                    request_hash='', state='abandoned', movement_id=None)
+        db.add(previous)
+        db.flush()
+        record(db, request, user, 'inventory.resolve', 'inventory_requests', previous.id)
+        db.commit()
+    return {'state': 'abandoned'}
+
+
 @router.get('/{identity}')
 def detail(identity: int, user: Read, db: Db):
     row = db.get(Product, identity)
@@ -146,3 +170,11 @@ def history(identity: int, user: Read, db: Db, after_id: int = Query(0, ge=0),
         StockMovement.id > after_id).order_by(StockMovement.id).limit(limit + 1)).all()
     return {'items': [movement(row) for row in rows[:limit]],
             'next_id': rows[limit - 1].id if len(rows) > limit else None}
+
+
+@router.get('/movements/{identity}')
+def movement_detail(identity: int, user: Read, db: Db):
+    row = db.get(StockMovement, identity)
+    if not row:
+        raise HTTPException(404, 'Movimentação não encontrada.')
+    return movement(row)

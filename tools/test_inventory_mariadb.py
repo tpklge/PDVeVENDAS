@@ -62,3 +62,12 @@ current=call('GET',f'/api/v1/inventory/{product["id"]}',token=token)[1]
 assert call('POST','/api/v1/inventory/adjustments',adjustment(current,'ci-negative-stock-test-0001'),token)[0]==409
 assert len(call('GET',f'/api/v1/inventory/{product["id"]}/movements',token=token)[1]['items'])==2
 print('PASS: MariaDB — estoque idempotente, saída/venda simultâneas, saldo não negativo e histórico.')
+
+key='ci-inventory-abandoned-0001'
+assert call('POST',f'/api/v1/inventory/requests/{key}/resolve',token=token)[1]['state']=='abandoned'
+assert call('POST','/api/v1/inventory/adjustments',adjustment(current,key,kind='entry'),token)[0]==409
+key=body['idempotency_key']
+result=call('POST',f'/api/v1/inventory/requests/{key}/resolve',token=token)[1]
+assert result['state']=='completed' and result['movement']['after']=='1.000'
+assert call('GET',f'/api/v1/inventory/movements/{result["movement"]["id"]}',token=token)[0]==200
+print('PASS: recuperação de movimento confirmado e barreira contra envio tardio.')

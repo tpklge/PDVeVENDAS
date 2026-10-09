@@ -110,3 +110,22 @@ def test_sales_and_inventory_share_balance_and_revision(environment):
     assert client.get(f'/api/v1/inventory/{row["id"]}',headers=auth).json()['stock']=='11.500'
     assert client.post('/api/v1/inventory/adjustments',headers=auth,
                        json=request(current,idempotency_key='stale-after-sale-0001')).status_code==409
+
+
+def test_resolve_pending_attempt_prevents_late_movement_and_recovers_completed(environment):
+    client,_ = environment
+    auth,row = prepare(environment)
+    body = request(row)
+    key = body['idempotency_key']
+    resolved = client.post(f'/api/v1/inventory/requests/{key}/resolve',headers=auth)
+    assert resolved.status_code == 200 and resolved.json()['state']=='abandoned'
+    assert client.post('/api/v1/inventory/adjustments',headers=auth,json=body).status_code==409
+    assert client.get(f'/api/v1/inventory/{row["id"]}',headers=auth).json()['stock']=='10.000'
+    assert client.post(f'/api/v1/inventory/requests/{key}/resolve',headers=auth).json()['state']=='abandoned'
+    body['idempotency_key']='inventory-completed-key-0001'
+    movement = client.post('/api/v1/inventory/adjustments',headers=auth,json=body).json()
+    resolved = client.post(f'/api/v1/inventory/requests/{body["idempotency_key"]}/resolve',headers=auth).json()
+    assert resolved['state']=='completed' and resolved['movement']['id']==movement['id']
+    assert client.post('/api/v1/inventory/requests/invalid/resolve',headers=auth).status_code==422
+    viewer = credentials(environment,'viewer')
+    assert client.post(f'/api/v1/inventory/requests/{key}/resolve',headers=viewer).status_code==403

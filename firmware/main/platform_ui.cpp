@@ -135,7 +135,7 @@ void create_platform_ui(PlatformStatus& status, lv_display_t* display) {
         lv_indev_set_display(keyboard, display);
     }
     auto footer = lv_label_create(screen);
-    lv_label_set_text(footer, "v0.7.1 | Desenvolvimento | PDV online | Comprovantes não fiscais");
+    lv_label_set_text(footer, "v0.8.0 | Desenvolvimento | PDV online | Comprovantes não fiscais");
     lv_obj_set_pos(footer, 32, 676);
     select_page(0);
     refresh(nullptr);

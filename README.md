@@ -3,11 +3,10 @@
 ERP comercial e PDV nativo para M5Stack Tab5, em desenvolvimento incremental.
 Especificação integral: [docs/REQUISITOS_RECEBIDOS.md](docs/REQUISITOS_RECEBIDOS.md).
 
-A etapa **v0.8.0 — estoque** foi iniciada na branch `release/v0.8.0-inventory`.
-A base da API está implementada; tela nativa e implantação ainda pendentes.
-O OTA disponível nesta rodada é **v0.7.1**, com o fechamento de vendas mais claro,
-compatível com a API 0.7.0 instalada. Ver [estoque](docs/releases/v0.8.0.md) e
-[fluxo de vendas](docs/releases/v0.7.1.md).
+A etapa **v0.8.0 — estoque** está implementada na branch `release/v0.8.0-inventory`,
+aguardando testes no Tab5. Inclui entradas, saídas, contagem, saldo, estoque mínimo,
+histórico e recuperação de tentativas no microSD. Ver [implantação e operação](docs/releases/v0.8.0.md).
+O usuário confirmou vendas e o fechamento 0.7.1 funcionando.
 O firmware tem primeiro boot, desbloqueio local, configuração criptografada,
 Wi-Fi e login ERP. O usuário validou cadastro, consulta, persistência após reinício,
 edição, desativação/reativação e filtros. Ver [validação de produtos](docs/releases/v0.5.0.md).
@@ -20,7 +19,7 @@ CI com MariaDB real aprovou persistência e restauração em AMD64/ARM64; a
 verificação final no OCI também passou. Etapa aprovada. Ver [stack](docker/README.md)
 e [relatório](docs/releases/v0.2.0.md).
 
-O firmware validado é **v0.6.0**, mantendo a plataforma validada em v0.1.1.
+O último firmware confirmado pelo usuário é **v0.7.1**, mantendo a plataforma validada em v0.1.1.
 Display/LVGL, teclado I²C, touchscreen, menu de diagnóstico e montagem não destrutiva
 do microSD estão implementados. O usuário confirmou instalação e as três telas no dispositivo; esta revisão corrige os acentos.
 A etapa 0.7 acrescenta vendas online e comprovantes não fiscais.

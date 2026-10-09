@@ -1,11 +1,15 @@
 # Histórico
 
-## 0.8.0 — estoque: implementação iniciada
+## 0.8.0 — estoque implementado; validação física pendente
 
 - API de saldo, estoque mínimo e histórico de movimentos.
 - Entradas, saídas e ajustes justificados, com versão e idempotência.
 - Movimentos, saldo e auditoria transacionais; bloqueios compartilhados com vendas.
-- Tela de estoque e implantação 0.8.0 ainda pendentes.
+- Tela nativa, pesquisa/filtros, revisão e confirmação de movimento.
+- Recuperação criptografada no microSD; resolução impede envio atrasado.
+- Histórico completo e integração com vendas/cancelamentos.
+- 33 testes locais da API aprovados; atualização preserva dados existentes.
+- Usuário confirmou o fechamento 0.7.1 funcionando.
 
 ## 0.7.1 — fechamento de venda mais claro
 
