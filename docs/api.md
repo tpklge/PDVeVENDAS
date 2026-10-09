@@ -1,4 +1,4 @@
-# API TAB5 ERP 0.12.0
+# API TAB5 ERP 1.0.0
 
 FastAPI, JSON UTF-8, /api/v1, schema esperado 008_offline. HTTPS via Traefik.
 Autenticação opaca, refresh rotativo, revogação, RBAC e senha ERP mínimo 8 caracteres.

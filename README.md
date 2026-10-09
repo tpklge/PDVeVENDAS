@@ -1,12 +1,20 @@
 # TAB5 ERP
 
-ERP comercial e PDV nativo para M5Stack Tab5, em desenvolvimento incremental.
+ERP comercial e PDV nativo para M5Stack Tab5.
 Especificação integral: [docs/REQUISITOS_RECEBIDOS.md](docs/REQUISITOS_RECEBIDOS.md).
 
-A etapa **v0.12.0 — segurança e estabilidade** está implementada na
-`release/v0.12.0-security`. A etapa 0.11 foi aprovada pelo usuário em 09/10/2026:
-rascunho após reinício, consulta offline, reconexão e atualização do catálogo.
-Testes automatizados e CI aprovados; homologação final no OTA/OCI pendente. Ver [revisão final](docs/releases/v0.12.0.md).
+**Versão 1.0.0**, consolidada a pedido do usuário em 09/10/2026, na branch
+`release/v1.0.0-stable`. Inclui produtos, clientes/fornecedores, vendas, estoque,
+caixa/financeiro, relatórios, cache e rascunhos criptografados no microSD.
+Entrega e atualização: [release 1.0](docs/releases/v1.0.0.md) e
+[instalação](docs/installation.md). Comprovantes não fiscais; pagamentos declarados
+pelo operador; finalizar venda exige confirmação da API. Ver
+[limitações e evidências](docs/final-validation.md).
+
+As etapas até 0.11 foram aprovadas pelo usuário. A revisão 0.12 teve testes
+API, MariaDB AMD64/ARM64, build, corrupção, recuperação e TLS aprovados. A
+consolidação 1.0 preserva a implementação e os formatos; não altera senhas,
+PIN, configurações, banco ou regras comerciais.
 O usuário confirmou os relatórios e a atualização 0.10.0.
 O usuário confirmou abertura, duas vendas e fechamento de caixa na 0.9.0,
 e percebeu desbloqueio mais rápido. API exige caixa aberto para novas vendas.

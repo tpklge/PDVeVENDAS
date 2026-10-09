@@ -1,7 +1,8 @@
-# Homologação antes de 1.0
+# Evidências e limites da entrega 1.0
 
-A etapa 0.11 foi aprovada pelo usuário em 09/10/2026. A 0.12 é a revisão final,
-com implementação entregue e confirmação no dispositivo/OCI ainda necessária.
+O usuário aprovou a etapa 0.11 e autorizou gerar a versão 1.0 em 09/10/2026.
+A 0.12 teve revisão e testes automatizados aprovados. A autorização para a entrega
+não é registrada como execução dos ensaios físicos detalhados ainda não relatados.
 Não substituir confirmação física por testes nativos ou build.
 
 | Critérios finais da especificação | Evidência atual | Fechamento |
@@ -34,6 +35,6 @@ ou venda definitiva offline. Configuração obrigatória no microSD por escolha 
 usuário; sem cartão não existe configuração para login nem fila financeira segura.
 PIN curto aprovado pelo usuário; guardar cartão e backups em local protegido.
 
-Após os resultados finais, criar release/v1.0.0-stable, atualizar versões/notas,
-compilar/testar os artefatos e somente então publicar tag estável. Não alterar dados
-comerciais nem provisionar novamente a instalação existente.
+A consolidação usa release/v1.0.0-stable, versões/notas e artefatos 1.0.0.
+A tag é publicada depois dos testes automatizados da release; links/resultados em
+releases/v1.0.0.md. Não altera dados comerciais nem provisiona novamente a instalação.

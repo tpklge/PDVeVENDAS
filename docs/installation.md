@@ -1,4 +1,4 @@
-# Instalação e atualização — TAB5 ERP 0.12.0
+# Instalação e atualização — TAB5 ERP 1.0.0
 
 Servidor: OCI Ampere ARM64, Ubuntu com Docker Engine/Compose Plugin, Python 3 e
 unzip. Traefik já instalado, provider Docker e rede externa meshcentral_proxy;
@@ -14,9 +14,8 @@ atualização do servidor para essa pasta. Faça primeiro a atualização do ser
 
 ```sh
 cd /home/ubuntu/TAB5_ERP
-unzip -o TAB5_ERP-v0.12.0-server-update.zip
-bash docker/scripts/update-security.sh
-bash docker/scripts/validate-security.sh
+unzip -o TAB5_ERP-v1.0.0-server-update.zip
+bash docker/scripts/update-stable.sh
 ```
 
 O script salva backup, constrói a API, para a versão anterior, aplica Alembic/seed,
@@ -27,8 +26,8 @@ O pacote é incremental; instalação vazia precisa do código completo abaixo.
 
 ## Servidor novo
 
-Obtenha o **código completo** da branch release/v0.12.0-security no GitHub
-[tpklge/PDVeVENDAS](https://github.com/tpklge/PDVeVENDAS/tree/release/v0.12.0-security)
+Obtenha o **código completo** da branch release/v1.0.0-stable no GitHub
+[tpklge/PDVeVENDAS](https://github.com/tpklge/PDVeVENDAS/tree/release/v1.0.0-stable)
 e coloque em `/home/ubuntu/TAB5_ERP`. Deve incluir database/schema.sql,
 database/initial_data.sql e docker/mariadb; o ZIP incremental não os substitui.
 
@@ -61,7 +60,7 @@ exige diagnóstico; não apagar uma base para tentar novamente.
 1. Preserve a pasta ERP do microSD, PIN e alimentação estável. Não formatar cartão.
 2. Confira SHA-256 do BIN com o arquivo .sha256 fornecido; Linux usa sha256sum -c,
    macOS usa shasum -a256 -c, executados na pasta do BIN/sidecar.
-3. Instale **TAB5_ERP-v0.12.0-app-OTA.bin** pelo M5Launcher já validado pelo usuário.
+3. Instale **TAB5_ERP-v1.0.0-app-OTA.bin** pelo M5Launcher já validado pelo usuário.
    É BIN da aplicação, sem erase/regravação de partições. Não instalar bootloader
    no lugar do aplicativo. Requisitos de build/partições em [hardware](hardware.md).
 4. Instalação existente: desbloqueie pelo PIN de quatro números, aguarde conexão

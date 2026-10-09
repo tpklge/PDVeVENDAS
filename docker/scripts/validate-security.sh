@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/common.sh"
 bash scripts/check-health.sh
-compose exec -T api python - <<'PY'
+TASK_EXPECTED_VERSION="$(tr -d '\r\n' < ../VERSION)"
+[[ "$TASK_EXPECTED_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+compose exec -T -e "TAB5_EXPECTED_VERSION=$TASK_EXPECTED_VERSION" api python - <<'PY'
+import os
 from app.config import VERSION
 from app.db import SessionFactory
 from app.models import AuthAudit, AuditLog
 from sqlalchemy import select, func
-assert VERSION == '0.12.0', 'API ainda desatualizada'
+assert VERSION == os.environ['TAB5_EXPECTED_VERSION'], 'API ainda desatualizada'
 with SessionFactory() as db:
     print('Auditoria de autenticação disponível:', db.scalar(select(func.count()).select_from(AuthAudit)) >= 0)
     print('Auditoria de operações disponível:', db.scalar(select(func.count()).select_from(AuditLog)) >= 0)
-print('PASS: API 0.12.0 e tabelas de auditoria disponíveis; nenhuma credencial exibida.')
+print(f'PASS: API {VERSION} e tabelas de auditoria disponíveis; nenhuma credencial exibida.')
 PY
 TASK_API_CONTAINER="$(compose ps -q api)"
 docker inspect "$TASK_API_CONTAINER" --format '{{json .}}' | python3 -c '

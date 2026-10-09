@@ -1,6 +1,18 @@
 # Histórico
 
-## 0.12.0 — segurança e estabilidade em validação
+## 1.0.0 — entrega estável consolidada
+
+- Consolidação das etapas 0.1–0.12, autorizada pelo usuário em 09/10/2026.
+- Firmware OTA e API 1.0.0; schema 008_offline e formatos persistentes preservados.
+- Produtos, clientes/fornecedores, PDV, estoque, caixa, financeiro e relatórios.
+- Cache incremental criptografado, rascunhos e recuperação idempotente.
+- PIN, credenciais, conexão Wi-Fi/TLS, dados e microSD preservados.
+- Atualização com backup e validação de segurança pela versão esperada.
+- Documentação de instalação/recuperação e limites funcionais consolidada.
+- Testes finais e publicação serão registrados no relatório da release.
+
+
+## 0.12.0 — segurança e estabilidade implementadas e testadas
 
 - Revogação e renovação de sessões com bloqueios na mesma ordem.
 - Auditoria de login negado, limitação e replay de refresh, sem credenciais.

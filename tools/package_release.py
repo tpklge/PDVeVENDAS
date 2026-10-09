@@ -18,6 +18,7 @@ def main():
               for file in (ROOT / folder).rglob("*") if file.suffix in {".c", ".cpp", ".hpp", ".h"}]
     assert binary.stat().st_mtime >= max(file.stat().st_mtime for file in inputs), "Compile o firmware atualizado"
     DIST.mkdir(exist_ok=True)
+    update_script = "update-stable.sh" if VERSION == "1.0.0" else "update-security.sh"
     app = DIST / f"TAB5_ERP-v{VERSION}-app-OTA.bin"
     shutil.copyfile(binary, app)
     files = [file for file in (ROOT / "api").rglob("*") if file.is_file()
@@ -35,7 +36,7 @@ def main():
             package.write(file, relative)
         package.writestr("README-update.txt", f"TAB5 ERP {VERSION}\n\nServidor antes do OTA:\n"
             f"cd /home/ubuntu/TAB5_ERP\nunzip -o TAB5_ERP-v{VERSION}-server-update.zip\n"
-            "bash docker/scripts/update-security.sh\nbash docker/scripts/validate-security.sh\n\n"
+            f"bash docker/scripts/{update_script}\n\n"
             f"Depois instale TAB5_ERP-v{VERSION}-app-OTA.bin pelo launcher habitual.\n"
             "Preserve microSD, PIN, usuários/senhas, .env/secrets e volumes. Não reimportar SQL/initialize.\n"
             f"Leia docs/releases/v{VERSION}.md e docs/recovery.md.\n")
@@ -43,6 +44,7 @@ def main():
         assert package.testzip() is None
         required = {"api/requirements.lock", "api/app/request_limits.py", "api/migrations/versions/008_offline.py",
                     "docker/scripts/update-security.sh", "docker/scripts/validate-security.sh"}
+        required.add(f"docker/scripts/{update_script}")
         assert required <= set(package.namelist())
     licenses = DIST / f"TAB5_ERP-v{VERSION}-LICENSES.txt"
     licenses.write_text((ROOT / "LICENSE").read_text() + "\n\nMbed TLS — Apache-2.0 escolhida:\n" + (ROOT / "docs/licenses/mbedtls.txt").read_text())

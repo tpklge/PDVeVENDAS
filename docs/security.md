@@ -1,4 +1,4 @@
-# Segurança e estabilidade — 0.12.0
+# Segurança e estabilidade — 1.0.0
 
 Acesso comercial exige sessão ERP e RBAC no servidor. PIN local de quatro números
 continua desbloqueando somente o microSD; não recebe permissões da API. Senha ERP
@@ -98,5 +98,5 @@ expirado; só enviam bytes de aplicação depois da validação.
 
 Não afirmar retirada física de energia, corrupção física de cartão, oito horas de
 uso ou 1.000 trocas de tela sem medições no dispositivo. Não gravar eFuses ou exigir
-Secure Boot/Flash Encryption irreversível para esta entrega. Versão 1.0 só será
-marcada após validação final no servidor/Tab5, conforme o roteiro.
+Secure Boot/Flash Encryption irreversível para esta entrega. A versão 1.0 consolida a revisão 0.12 por autorização do usuário em 09/10/2026.
+Resultados comprovados e ensaios não realizados estão registrados em final-validation.md.
