@@ -34,7 +34,7 @@ jobs:
           bash ../tools/test_offline_storage.sh
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: tab5-erp-v0.11.0-usb
+          name: tab5-erp-v0.12.0-usb
           path: |
             firmware/build/tab5_erp.bin
             firmware/build/bootloader/bootloader.bin

@@ -1,6 +1,18 @@
 # Histórico
 
-## 0.11.0 — offline e sincronização implementados; validação física pendente
+## 0.12.0 — segurança e estabilidade em validação
+
+- Revogação e renovação de sessões com bloqueios na mesma ordem.
+- Auditoria de login negado, limitação e replay de refresh, sem credenciais.
+- Corpo HTTP limitado a 64 KiB antes do JSON; falhas sem detalhes sensíveis.
+- Relatórios invalidam paginação após restauração/alteração do epoch.
+- Journal v1 preservado; limpeza exige contexto e operador corretos.
+- Dependências fixadas com hashes e auditoria de avisos do PyPI.
+- Fork Espressif Mbed TLS 3.6.7 em build isolado; CA/hostname/expiração testados.
+- 68 testes API e build ESP32-P4 aprovados localmente; CI em validação.
+
+
+## 0.11.0 — offline e sincronização validados pelo usuário
 
 - Catálogo incremental por revisão/epoch, incluindo preços, estoque e inativação.
 - Cache AES-GCM no microSD, registros vinculados ao snapshot/posição e footer SHA-256.

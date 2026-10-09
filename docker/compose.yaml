@@ -3,7 +3,7 @@ x-api: &api
   build:
     context: ..
     dockerfile: docker/api.Dockerfile
-  image: tab5-erp-api:0.11.0
+  image: tab5-erp-api:0.12.0
   restart: unless-stopped
   networks: [backend]
   security_opt: ["no-new-privileges:true"]
@@ -77,6 +77,9 @@ services:
       traefik.http.routers.tab5-api.tls: "true"
       traefik.http.routers.tab5-api.tls.certresolver: "${TRAEFIK_CERTRESOLVER:-letsencrypt}"
       traefik.http.routers.tab5-api.service: tab5-api
+      traefik.http.routers.tab5-api.middlewares: tab5-security@docker
+      traefik.http.middlewares.tab5-security.headers.stsSeconds: "31536000"
+      traefik.http.middlewares.tab5-security.headers.contentTypeNosniff: "true"
       traefik.http.services.tab5-api.loadbalancer.server.port: "8000"
       traefik.http.services.tab5-api.loadbalancer.server.scheme: http
 networks:

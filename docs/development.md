@@ -35,3 +35,8 @@ com pins atualizados somente junto de testes e relatório de compatibilidade.
 Git remote: https://github.com/tpklge/PDVeVENDAS.git. Foi encontrado vazio pelo Git.
 GitHub CLI sem autenticação nesta sessão; o Git normal publicou a branch com sucesso.
 Nunca imprimir tokens nem executar force push. Credenciais/backup não pertencem ao Git.
+
+Desde 0.12, o configure prepara Mbed TLS 3.6.7 do fork Espressif em build/security,
+por commit e SHA-256 fixados, sem alterar SDK compartilhado. Primeiro build precisa
+HTTPS para obter o arquivo; posteriores usam cache verificado.
+`tools/test_offline_storage.sh` testa armazenamento e TLS contra a mesma biblioteca.

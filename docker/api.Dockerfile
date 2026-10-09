@@ -2,7 +2,7 @@ FROM python:3.13.7-slim-bookworm@sha256:adafcc17694d715c905b4c7bebd96907a1fd5cf1
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY api/requirements.lock ./requirements.lock
-RUN pip install --no-cache-dir -r requirements.lock && useradd --uid 10001 --create-home app
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock && useradd --uid 10001 --create-home app
 COPY api/ ./
 RUN chmod -R a+rX /app
 USER 10001:10001

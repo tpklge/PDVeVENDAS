@@ -120,7 +120,7 @@ def test_finance_atomic_rollback_on_audit_failure(environment,monkeypatch):
     def fail(*args):raise RuntimeError('injected audit failure')
     monkeypatch.setattr(module,'record',fail)
     body={'account_id':row['id'],'version':1,'session_id':session['id'],'method':'cash','amount':'80','reason':'Baixa integral','idempotency_key':'rollback-settle-key-00001'}
-    with pytest.raises(RuntimeError):client.post(P+'/settlements',headers=auth,json=body)
+    assert client.post(P+'/settlements',headers=auth,json=body).status_code==500
     with factory() as db:
         assert db.get(FinancialAccount,row['id']).paid==0
         assert db.scalar(select(func.count()).select_from(FinancialSettlement))==0

@@ -64,6 +64,14 @@ jobs:
         env:
           SKIP_PUBLIC_HTTPS: "1"
         run: bash docker/scripts/validate-release.sh
+      - name: Revogação e autenticação concorrentes no MariaDB real
+        run: |
+          docker compose --env-file docker/.env -f docker/compose.yaml run --rm -T --no-deps \
+            -e CI=true \
+            -v "$PWD/tools/test_security_mariadb.py:/run/test/security.py:ro" \
+            api python /run/test/security.py
+      - name: Auditar dependências fixadas e hashes
+        run: python3 tools/audit_dependencies.py
       - name: Testes da API
         run: |
           python3 -m venv /tmp/tab5-api-tests

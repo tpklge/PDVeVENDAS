@@ -1,4 +1,4 @@
-# API TAB5 ERP 0.11.0
+# API TAB5 ERP 0.12.0
 
 FastAPI, JSON UTF-8, /api/v1, schema esperado 008_offline. HTTPS via Traefik.
 Autenticação opaca, refresh rotativo, revogação, RBAC e senha ERP mínimo 8 caracteres.
@@ -19,8 +19,12 @@ Listagens de caixa/contas usam limit máximo 25, after_id e next_id; Tab5 usa 8.
 Consultar a release correspondente para permissões, campos e migração.
 
 Relatórios: GET /api/v1/reports/{kind}. Período Cuiabá, filtros opcionais, agregações
-SQL, páginas com revisão e valores financeiros protegidos. Ver [0.10](releases/v0.11.0.md).
+SQL, páginas com revisão e valores financeiros protegidos. Ver [0.10](releases/v0.10.0.md).
 
 GET /api/v1/sync/products — products.read; since/epoch, cursor after_id/revision,
 limit máximo 25. Inclui inativos e revisões de cadastro/estoque/vendas/cancelamento.
 409 recusa base/cursor obsoletos; sem mudança por relógio do cliente. Ver [0.11](releases/v0.11.0.md).
+
+0.12: corpo máximo 64 KiB; erro 413 inclusive chunked. Erros 500/503 têm mensagem
+genérica e X-Correlation-ID, sem parâmetros sensíveis. Relatórios incluem epoch.
+429 inclui Retry-After: 900; 401 inclui WWW-Authenticate: Bearer.

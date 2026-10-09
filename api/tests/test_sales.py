@@ -91,9 +91,8 @@ def test_transaction_rolls_back_on_write_failure(environment,monkeypatch):
     original=module.record
     def fail(*args,**kwargs):raise RuntimeError('simulated transaction failure')
     monkeypatch.setattr(module,'record',fail)
-    # TestClient propagates exceptions after the application's 500 handler.
-    import pytest
-    with pytest.raises(RuntimeError):client.post('/api/v1/sales',headers=auth,json=body)
+    # Failure is sanitized; the transaction must still roll back completely.
+    assert client.post('/api/v1/sales',headers=auth,json=body).status_code == 500
     with factory() as db:
         assert db.scalar(select(Product)).stock==10
         assert db.scalar(select(func.count()).select_from(Sale))==0

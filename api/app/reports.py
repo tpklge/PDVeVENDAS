@@ -37,7 +37,7 @@ def period(start,end):
 def revision_token(db,state,scope):
     # All commercial mutations share this lock. Financial writes do not change
     # catalog revision; their durable request IDs and cash ledger cover those too.
-    facts=[state.revision,db.scalar(select(func.max(CashMovement.id))) or 0,
+    facts=[state.epoch,state.revision,db.scalar(select(func.max(CashMovement.id))) or 0,
            db.scalar(select(func.max(FinanceRequest.id))) or 0]
     return hashlib.sha256(json.dumps([scope,facts],sort_keys=True,default=str).encode()).hexdigest()
 

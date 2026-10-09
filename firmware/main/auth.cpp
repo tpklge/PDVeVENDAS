@@ -8,6 +8,7 @@
 #include "cash.hpp"
 #include "reports.hpp"
 #include "offline.hpp"
+#include "journal.hpp"
 #include <sys/stat.h>
 #include "sdkconfig.h"
 
@@ -32,6 +33,13 @@
 #include "settings_file.hpp"
 #include "mbedtls/pkcs5.h"
 #include "mbedtls/gcm.h"
+#include "mbedtls/version.h"
+#if MBEDTLS_VERSION_NUMBER < 0x03060700
+#error "TAB5 ERP requires the verified Mbed TLS 3.6.7 security override"
+#endif
+#if CONFIG_ESP_TLS_INSECURE || CONFIG_ESP_TLS_SKIP_SERVER_CERT_VERIFY || CONFIG_MBEDTLS_ALLOW_WEAK_CERTIFICATE_VERIFICATION
+#error "TLS certificate verification must remain enabled"
+#endif
 #include "mbedtls/platform_util.h"
 #include "cJSON.h"
 #include "freertos/FreeRTOS.h"
@@ -101,29 +109,14 @@ void publish(Page page,const char* text,bool busy=false) {
     xSemaphoreGive(view_lock);
 }
 constexpr char journal_path[]="/sdcard/ERP/pdv/pending.enc";
-struct PendingSale { uint32_t format; int user; char api[160]; char device[32]; char request[4097]; };
-struct SaleEnvelope { uint32_t format; uint8_t iv[12],tag[16],data[sizeof(PendingSale)]; };
-bool pending_record_exists(const char* path){char backup[96];snprintf(backup,sizeof(backup),"%s.bak",path);FILE* f=fopen(path,"rb");if(!f)f=fopen(backup,"rb");if(!f)return false;fclose(f);return true;}
+bool pending_record_exists(const char* path){return protected_record_exists(path);}
 constexpr char inventory_journal_path[]="/sdcard/ERP/inventory/pending.enc";
 constexpr char finance_journal_path[]="/sdcard/ERP/finance/pending.enc";
 bool pending_operation_exists(){return pending_record_exists(journal_path)||pending_record_exists(inventory_journal_path)||pending_record_exists(finance_journal_path)||offline_draft_exists();}
 
 int protected_journal(const char* operation,int user,char* request,size_t capacity,const char* path,const char* aad){
     if(!unlocked||!card_ready)return -1;
-    if(strcmp(operation,"clear")==0)return erase_settings_files(path)?1:-1;
-    auto* plain=static_cast<PendingSale*>(heap_caps_calloc(1,sizeof(PendingSale),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
-    auto* sealed=static_cast<SaleEnvelope*>(heap_caps_calloc(1,sizeof(SaleEnvelope),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
-    if(!plain||!sealed){heap_caps_free(plain);heap_caps_free(sealed);return -1;}
-    bool saving=strcmp(operation,"save")==0;int result=-1;
-    if(saving){if(strlen(request)>=sizeof(plain->request)){heap_caps_free(plain);heap_caps_free(sealed);return -1;}plain->format=1;plain->user=user;snprintf(plain->device,sizeof(plain->device),"%s",device_id);snprintf(plain->api,sizeof(plain->api),"%s",settings.api);snprintf(plain->request,sizeof(plain->request),"%s",request);sealed->format=1;random_bytes(sealed->iv,sizeof(sealed->iv));}
-    else{auto rc=load_settings_file(path,sealed,sizeof(*sealed));if(rc==FileRead::Missing)result=0;else if(rc!=FileRead::Found||sealed->format!=1)result=-1;if(rc!=FileRead::Found||sealed->format!=1){wipe(plain,sizeof(*plain));wipe(sealed,sizeof(*sealed));heap_caps_free(plain);heap_caps_free(sealed);return result;}}
-    mbedtls_gcm_context ctx;mbedtls_gcm_init(&ctx);int rc=mbedtls_gcm_setkey(&ctx,MBEDTLS_CIPHER_ID_AES,key,256);
-    if(rc==0&&saving)rc=mbedtls_gcm_crypt_and_tag(&ctx,MBEDTLS_GCM_ENCRYPT,sizeof(*plain),sealed->iv,sizeof(sealed->iv),reinterpret_cast<const uint8_t*>(aad),strlen(aad)+1,reinterpret_cast<const uint8_t*>(plain),sealed->data,16,sealed->tag);
-    if(rc==0&&!saving)rc=mbedtls_gcm_auth_decrypt(&ctx,sizeof(*plain),sealed->iv,sizeof(sealed->iv),reinterpret_cast<const uint8_t*>(aad),strlen(aad)+1,sealed->tag,16,sealed->data,reinterpret_cast<uint8_t*>(plain));
-    mbedtls_gcm_free(&ctx);
-    if(rc==0&&saving){char folder[96];snprintf(folder,sizeof(folder),"%s",path);char* slash=strrchr(folder,'/');if(slash)*slash=0;mkdir(folder,0755);result=save_settings_file(path,sealed,sizeof(*sealed))?1:-1;}
-    if(rc==0&&!saving){if(plain->format!=1||!memchr(plain->api,0,sizeof(plain->api))||!memchr(plain->device,0,sizeof(plain->device))||!memchr(plain->request,0,sizeof(plain->request)))result=-1;else if(plain->user!=user||strcmp(plain->device,device_id)||strcmp(plain->api,settings.api))result=-2;else if(strlen(plain->request)<capacity){snprintf(request,capacity,"%s",plain->request);result=1;}}
-    wipe(plain,sizeof(*plain));wipe(sealed,sizeof(*sealed));heap_caps_free(plain);heap_caps_free(sealed);return result;
+    return protected_request(operation,user,request,capacity,key,settings.api,device_id,path,aad);
 }
 
 int sale_journal(const char* operation,int user,char* request,size_t capacity){return protected_journal(operation,user,request,capacity,journal_path,"TAB5 ERP pending sale v1");}
@@ -230,9 +223,11 @@ esp_err_t http_event(esp_http_client_event_t* event) {
     return ESP_OK;
 }
 int request(const char* path,const char* body,Response& response,bool authenticated=false,esp_http_client_method_t method=HTTP_METHOD_GET) {
+    if(String(settings.api).rfind("https://",0)!=0)return -1;
     if(!(xEventGroupGetBits(wifi_events)&1) || !sync_time())return -1;
     String url=String(settings.api)+path;
     esp_http_client_config_t cfg{};cfg.url=url.c_str();cfg.crt_bundle_attach=esp_crt_bundle_attach;
+    cfg.transport_type=HTTP_TRANSPORT_OVER_SSL;cfg.skip_cert_common_name_check=false;
     cfg.timeout_ms=15000;cfg.disable_auto_redirect=true;cfg.event_handler=http_event;cfg.user_data=&response;
     auto client=esp_http_client_init(&cfg);if(!client)return -1;
     if(method!=HTTP_METHOD_GET)esp_http_client_set_method(client,method);

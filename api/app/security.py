@@ -3,7 +3,8 @@ import secrets
 from datetime import timedelta
 from argon2 import PasswordHasher
 from argon2.exceptions import VerificationError, InvalidHashError
-from .models import Session, utcnow
+from sqlalchemy import select
+from .models import Session, User, utcnow
 
 # Argon2id: 64 MiB, 3 iterations, 2 lanes. Measure on the target server.
 hasher = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=2)
@@ -17,6 +18,16 @@ def verify(encoded: str, password: str):
         return hasher.verify(encoded, password)
     except (VerificationError, InvalidHashError):
         return False
+
+def lock_user(db, user_id):
+    # Authentication mutations all take the user lock before session locks.
+    # Refresh must not create a session after password reset/logout has revoked it.
+    return db.scalar(select(User).where(User.id == user_id).with_for_update()
+                     .execution_options(populate_existing=True))
+
+def lock_session(db, session_id):
+    return db.scalar(select(Session).where(Session.id == session_id).with_for_update()
+                     .execution_options(populate_existing=True))
 
 def issue_session(db, user, device_id, family=None, refresh_expires=None):
     access = secrets.token_urlsafe(32)

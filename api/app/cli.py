@@ -17,6 +17,13 @@ def main():
     args = parser.parse_args()
     if not re.fullmatch(r"[a-z0-9_.@+-]{1,80}", args.username):
         parser.error("Usuário inválido")
+    password = None
+    if args.operation == "reset-password":
+        # Do not hold a database row lock while waiting for keyboard input.
+        password = getpass.getpass("Nova senha ERP (mínimo 8 caracteres): ")
+        confirmation = getpass.getpass("Confirme a nova senha: ")
+        if password != confirmation or not 8 <= len(password) <= 128:
+            raise SystemExit("Senhas diferentes ou tamanho inválido. Nenhuma alteração aplicada.")
     with SessionFactory.begin() as db:
         if args.operation == "seed":
             seed(db)
@@ -33,14 +40,10 @@ def main():
                 raise SystemExit("Execute as migrações e seed antes do provisionamento.")
             db.add(User(username=args.username, password_hash=hasher.hash(password), roles=[role]))
         else:
-            user = db.scalar(select(User).where(User.username == args.username))
+            user = db.scalar(select(User).where(User.username == args.username).with_for_update())
             if not user:
                 raise SystemExit("Usuário não encontrado.")
             if args.operation == "reset-password":
-                password = getpass.getpass("Nova senha ERP (mínimo 8 caracteres): ")
-                confirmation = getpass.getpass("Confirme a nova senha: ")
-                if password != confirmation or not 8 <= len(password) <= 128:
-                    raise SystemExit("Senhas diferentes ou tamanho inválido. Nenhuma alteração aplicada.")
                 user.password_hash = hasher.hash(password)
                 user.must_change_password = False
             db.execute(update(Session).where(Session.user_id == user.id).values(revoked=True))
