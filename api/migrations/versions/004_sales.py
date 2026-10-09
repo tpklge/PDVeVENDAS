@@ -16,7 +16,7 @@ def upgrade():
         sa.Column('canceled_by',sa.Integer(),sa.ForeignKey('users.id')),sa.Column('cancel_reason',sa.String(240)),
         sa.UniqueConstraint('user_id','device_id','idempotency_key',name='uq_sale_request'),
         sa.CheckConstraint("status IN ('completed','canceled')",name='ck_sale_status'),
-        sa.CheckConstraint('subtotal >= 0 AND discount >= 0 AND total >= 0 AND change >= 0',name='ck_sale_totals'))
+        sa.CheckConstraint('subtotal >= 0 AND discount >= 0 AND total >= 0 AND `change` >= 0',name='ck_sale_totals'))
     op.create_table('sale_requests',sa.Column('id',sa.Integer(),primary_key=True),
         sa.Column('user_id',sa.Integer(),sa.ForeignKey('users.id'),nullable=False),sa.Column('device_id',sa.String(80),nullable=False),
         sa.Column('idempotency_key',sa.String(64),nullable=False),sa.Column('state',sa.String(16),nullable=False),

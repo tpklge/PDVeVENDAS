@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <climits>
+#include <optional>
+#include <limits>
 namespace tab5::money {
 // Decimal input only: no floating-point or thousands separators.
 inline bool parse(const char* s,unsigned decimals,int64_t& out) {
@@ -50,5 +52,22 @@ inline bool line(int64_t price,int64_t milli,int64_t& out) {
 inline int64_t percent(int64_t cents,int64_t hundredths) {
     // Split before multiplication to keep valid commercial values in int64.
     return (cents/10000)*hundredths+((cents%10000)*hundredths+5000)/10000;
+}
+}
+
+namespace tab5 {
+// Values are cents; quantities are thousandths. Negative stock is forbidden.
+// The API revalidates all prices, discounts and permissions when confirming.
+inline std::optional<std::int64_t> line_total(std::int64_t unit_cents,
+        std::int64_t quantity_milli, std::int64_t discount_cents = 0) {
+    constexpr auto maximum = std::numeric_limits<std::int64_t>::max();
+    if (unit_cents < 0 || quantity_milli <= 0 || discount_cents < 0)
+        return std::nullopt;
+    if (unit_cents != 0 && quantity_milli > maximum / unit_cents)
+        return std::nullopt;
+    const auto product = unit_cents * quantity_milli;
+    const auto subtotal = product / 1000 + (product % 1000 >= 500 ? 1 : 0);
+    if (discount_cents > subtotal) return std::nullopt;
+    return subtotal - discount_cents;
 }
 }
