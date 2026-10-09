@@ -94,7 +94,7 @@ void publish(Page page,const char* text,bool busy=false) {
     xSemaphoreGive(view_lock);
 }
 constexpr char journal_path[]="/sdcard/ERP/pdv/pending.enc";
-struct PendingSale { uint32_t format; int user; char api[160]; char request[4097]; };
+struct PendingSale { uint32_t format; int user; char api[160]; char device[32]; char request[4097]; };
 struct SaleEnvelope { uint32_t format; uint8_t iv[12],tag[16],data[sizeof(PendingSale)]; };
 bool pending_sale_exists(){FILE* f=fopen(journal_path,"rb");if(!f)f=fopen("/sdcard/ERP/pdv/pending.enc.bak","rb");if(!f)return false;fclose(f);return true;}
 int sale_journal(const char* operation,int user,char* request,size_t capacity){
@@ -104,14 +104,14 @@ int sale_journal(const char* operation,int user,char* request,size_t capacity){
     auto* sealed=static_cast<SaleEnvelope*>(heap_caps_calloc(1,sizeof(SaleEnvelope),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
     if(!plain||!sealed){heap_caps_free(plain);heap_caps_free(sealed);return -1;}
     bool saving=strcmp(operation,"save")==0;int result=-1;
-    if(saving){if(strlen(request)>=sizeof(plain->request)){heap_caps_free(plain);heap_caps_free(sealed);return -1;}plain->format=1;plain->user=user;snprintf(plain->api,sizeof(plain->api),"%s",settings.api);snprintf(plain->request,sizeof(plain->request),"%s",request);sealed->format=1;random_bytes(sealed->iv,sizeof(sealed->iv));}
-    else{auto rc=load_settings_file(journal_path,sealed,sizeof(*sealed));if(rc==FileRead::Missing)result=0;else if(rc!=FileRead::Found||sealed->format!=1)result=-1;if(rc!=FileRead::Found){wipe(plain,sizeof(*plain));wipe(sealed,sizeof(*sealed));heap_caps_free(plain);heap_caps_free(sealed);return result;}}
+    if(saving){if(strlen(request)>=sizeof(plain->request)){heap_caps_free(plain);heap_caps_free(sealed);return -1;}plain->format=1;plain->user=user;snprintf(plain->device,sizeof(plain->device),"%s",device_id);snprintf(plain->api,sizeof(plain->api),"%s",settings.api);snprintf(plain->request,sizeof(plain->request),"%s",request);sealed->format=1;random_bytes(sealed->iv,sizeof(sealed->iv));}
+    else{auto rc=load_settings_file(journal_path,sealed,sizeof(*sealed));if(rc==FileRead::Missing)result=0;else if(rc!=FileRead::Found||sealed->format!=1)result=-1;if(rc!=FileRead::Found||sealed->format!=1){wipe(plain,sizeof(*plain));wipe(sealed,sizeof(*sealed));heap_caps_free(plain);heap_caps_free(sealed);return result;}}
     constexpr char aad[]="TAB5 ERP pending sale v1";mbedtls_gcm_context ctx;mbedtls_gcm_init(&ctx);int rc=mbedtls_gcm_setkey(&ctx,MBEDTLS_CIPHER_ID_AES,key,256);
     if(rc==0&&saving)rc=mbedtls_gcm_crypt_and_tag(&ctx,MBEDTLS_GCM_ENCRYPT,sizeof(*plain),sealed->iv,sizeof(sealed->iv),reinterpret_cast<const uint8_t*>(aad),sizeof(aad),reinterpret_cast<const uint8_t*>(plain),sealed->data,16,sealed->tag);
     if(rc==0&&!saving)rc=mbedtls_gcm_auth_decrypt(&ctx,sizeof(*plain),sealed->iv,sizeof(sealed->iv),reinterpret_cast<const uint8_t*>(aad),sizeof(aad),sealed->tag,16,sealed->data,reinterpret_cast<uint8_t*>(plain));
     mbedtls_gcm_free(&ctx);
     if(rc==0&&saving){mkdir("/sdcard/ERP/pdv",0755);result=save_settings_file(journal_path,sealed,sizeof(*sealed))?1:-1;}
-    if(rc==0&&!saving){if(plain->format!=1||!memchr(plain->api,0,sizeof(plain->api))||!memchr(plain->request,0,sizeof(plain->request)))result=-1;else if(plain->user!=user||strcmp(plain->api,settings.api))result=-2;else if(strlen(plain->request)<capacity){snprintf(request,capacity,"%s",plain->request);result=1;}}
+    if(rc==0&&!saving){if(plain->format!=1||!memchr(plain->api,0,sizeof(plain->api))||!memchr(plain->device,0,sizeof(plain->device))||!memchr(plain->request,0,sizeof(plain->request)))result=-1;else if(plain->user!=user||strcmp(plain->device,device_id)||strcmp(plain->api,settings.api))result=-2;else if(strlen(plain->request)<capacity){snprintf(request,capacity,"%s",plain->request);result=1;}}
     wipe(plain,sizeof(*plain));wipe(sealed,sizeof(*sealed));heap_caps_free(plain);heap_caps_free(sealed);return result;
 }
 

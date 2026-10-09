@@ -116,7 +116,7 @@ def test_resolve_closes_key_before_late_request_and_preserves_committed_sale(env
     assert client.post('/api/v1/sales',headers=auth,json=body).json()['replayed']
 
 
-def test_incremental_sales_migration_preserves_contacts_and_opening_stock(tmp_path):
+def test_incremental_sales_migration_preserves_contacts_and_opening_stock(tmp_path, monkeypatch):
     from alembic import command
     from alembic.config import Config
     from pathlib import Path
@@ -126,7 +126,7 @@ def test_incremental_sales_migration_preserves_contacts_and_opening_stock(tmp_pa
     from app.security import verify
     uri='sqlite:///'+str(tmp_path/'existing-sales.db')
     config=Config()
-    config.set_main_option('sqlalchemy.url',uri)
+    monkeypatch.setenv('DATABASE_URL',uri)
     config.set_main_option('script_location',str(Path(__file__).resolve().parents[1]/'migrations'))
     command.upgrade(config,'003_contacts')
     engine=create_engine(uri)
