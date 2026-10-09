@@ -2,7 +2,7 @@
 import re
 from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, field_validator
 from sqlalchemy import select, or_, delete
 from sqlalchemy.exc import IntegrityError
 from .dependencies import Db, Input, allowed
@@ -76,10 +76,10 @@ class ContactInput(Input):
             raise ValueError("CEP inválido")
         return value
 
-    @model_validator(mode="after")
-    def check_document(self):
-        self.document = document(self.document, self.person_type)
-        return self
+    @field_validator("document")
+    @classmethod
+    def check_document(cls, value, info):
+        return document(value, info.data.get("person_type", "PF"))
 
 
 class ContactEdit(ContactInput):

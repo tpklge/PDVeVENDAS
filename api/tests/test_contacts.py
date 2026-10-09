@@ -108,3 +108,15 @@ def test_upgrade_preserves_previous_users_products_and_roles(tmp_path, monkeypat
         assert 'suppliers.documents' in {p.code for r in user.roles for p in r.permissions}
         assert len(db.scalar(select(Role).where(Role.name=='Personalizado')).permissions)==1
     engine.dispose()
+
+
+
+def test_document_and_postal_errors_identify_fields_without_personal_values(environment):
+    client,_=environment
+    headers=credentials(environment)
+    response=client.post('/api/v1/customers',headers=headers,json={'name':'Teste','document':'52998224724','postal_code':'123'})
+    assert response.status_code==422
+    message=response.json()['error']['message']
+    assert 'CPF/CNPJ' in message and 'CEP' in message
+    assert '52998224724' not in message and 'campos informados' not in message
+    assert client.post('/api/v1/customers',headers=headers,json={'name':'Sem documento','postal_code':''}).status_code==201
