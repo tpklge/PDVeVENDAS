@@ -40,7 +40,9 @@ Validação após implantação, sem ignorar erros de certificado:
 curl --fail --show-error https://tab5api.ampere.diadiatech.com.br/health/ready
 ```
 
-Ainda não houve acesso SSH, alteração de DNS, emissão de certificado ou implantação.
-O usuário confirmou funcionamento adequado do firmware 0.1.1 em 08/10/2026.
+O usuário comprovou emissão do certificado pelo resolver letsencrypt e health ready
+em HTTPS no OCI na etapa 0.2. Não houve acesso SSH desta máquina ao servidor.
+Desde 0.12, labels da API acrescentam HSTS por um ano para esse domínio; testar
+com docker/scripts/validate-security.sh após atualizar.
 
 Referência: [labels e rede do provider Docker](https://doc.traefik.io/traefik/reference/routing-configuration/other-providers/docker/).

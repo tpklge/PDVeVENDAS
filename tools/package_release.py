@@ -25,7 +25,7 @@ def main():
     files += list((ROOT / "docker/scripts").glob("*.sh"))
     files += [ROOT / name for name in ["VERSION", "LICENSE", "CHANGELOG.md", "docker/api.Dockerfile",
               "docker/compose.yaml", f"docs/releases/v{VERSION}.md", "docs/api.md", "docs/security.md",
-              "docs/recovery.md", "docs/synchronization.md", "docs/permissions.md", "docs/database.md",
+              "docs/recovery.md", "docs/installation.md", "docs/wifi.md", "docs/traefik.md", "docker/README.md", "docs/synchronization.md", "docs/permissions.md", "docs/database.md",
               "docs/licenses/mbedtls.txt", "tools/audit_dependencies.py"]]
     server = DIST / f"TAB5_ERP-v{VERSION}-server-update.zip"
     with zipfile.ZipFile(server, "w", zipfile.ZIP_DEFLATED) as package:

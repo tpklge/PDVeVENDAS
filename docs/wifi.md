@@ -1,8 +1,8 @@
 # Wi-Fi
 
-Implementado no firmware candidato v0.3.1: ESP-Hosted 1.4.0/esp_wifi_remote 0.8.5
-com ESP32-C6 via SDIO. Não há rádio interno no P4. Compatibilidade do C6 e
-funcionamento na placa ainda precisam da validação física do usuário.
+Implementado e validado pelo usuário nas etapas anteriores: ESP-Hosted 1.4.0/esp_wifi_remote 0.8.5
+com ESP32-C6 via SDIO. Não há rádio interno no P4. O usuário confirmou conexão/login e uso dos módulos na placa.
+A revisão 0.12 mantém DHCP/NTP/conexão, com Mbed TLS 3.6.7; validar o novo OTA.
 
 Menu pesquisa SSID/RSSI, permite escolher rede/informar senha, usa DHCP e mostra
 IP/gateway. Reconecta com backoff, esquece rede mediante confirmação e testa
