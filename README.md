@@ -6,7 +6,7 @@ Especificação integral: [docs/REQUISITOS_RECEBIDOS.md](docs/REQUISITOS_RECEBID
 A etapa **v0.12.0 — segurança e estabilidade** está implementada na
 `release/v0.12.0-security`. A etapa 0.11 foi aprovada pelo usuário em 09/10/2026:
 rascunho após reinício, consulta offline, reconexão e atualização do catálogo.
-CI e homologação final em validação. Ver [revisão final](docs/releases/v0.12.0.md).
+Testes automatizados e CI aprovados; homologação final no OTA/OCI pendente. Ver [revisão final](docs/releases/v0.12.0.md).
 O usuário confirmou os relatórios e a atualização 0.10.0.
 O usuário confirmou abertura, duas vendas e fechamento de caixa na 0.9.0,
 e percebeu desbloqueio mais rápido. API exige caixa aberto para novas vendas.

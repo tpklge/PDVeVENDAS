@@ -9,7 +9,8 @@
 - Journal v1 preservado; limpeza exige contexto e operador corretos.
 - Dependências fixadas com hashes e auditoria de avisos do PyPI.
 - Fork Espressif Mbed TLS 3.6.7 em build isolado; CA/hostname/expiração testados.
-- 68 testes API e build ESP32-P4 aprovados localmente; CI em validação.
+- 68 testes API, MariaDB AMD64/ARM64, backup/restore e autenticação concorrente aprovados.
+- Build ESP32-P4, corrupção/alocação e TLS aprovados localmente e no CI.
 
 
 ## 0.11.0 — offline e sincronização validados pelo usuário
