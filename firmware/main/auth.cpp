@@ -1,6 +1,8 @@
 #include "auth.hpp"
 #include "dashboard.hpp"
 #include "products.hpp"
+#include "contacts.hpp"
+#include "module_policy.hpp"
 #include "sdkconfig.h"
 
 #if !CONFIG_SLAVE_IDF_TARGET_ESP32C6
@@ -54,7 +56,7 @@ enum class Action { Provision, Unlock, Save, Scan, Login, Password, Logout, Loca
 struct Command { Action action; char fields[4][192]; };
 struct Settings { char ssid[33]; char password[65]; char api[160]; bool setup_complete; };
 struct Envelope { uint32_t format; uint8_t salt[16]; uint8_t iv[12]; uint8_t tag[16]; uint8_t data[sizeof(Settings)]; };
-struct View { Page page; bool busy; unsigned serial; char message[1536]; char generated[25]; char networks[320]; bool light; bool authenticated; bool api_ready; bool checking; char identity[1536]; char permissions[512]; char ssid[33]; char api[160]; };
+struct View { Page page; bool busy; unsigned serial; char message[1536]; char generated[25]; char networks[320]; bool light; bool authenticated; bool api_ready; bool checking; char identity[1536]; char permissions[2048]; char ssid[33]; char api[160]; };
 View view{};
 QueueHandle_t commands;
 SemaphoreHandle_t view_lock;
@@ -66,6 +68,7 @@ Envelope envelope{};
 uint8_t key[32]{};
 bool unlocked=false, wifi_started=false;
 bool browsing_products=false;
+bool browsing_contacts=false;
 esp_netif_t* netif=nullptr;
 String access, refresh_token;
 char device_id[32]{};
@@ -171,7 +174,7 @@ struct Response { String data; bool overflow=false; };
 esp_err_t http_event(esp_http_client_event_t* event) {
     auto* response=static_cast<Response*>(event->user_data);
     if(event->event_id==HTTP_EVENT_ON_DATA){
-        if(response->data.size()+event->data_len>8192){response->overflow=true;return ESP_FAIL;}
+        if(response->data.size()+event->data_len>16384){response->overflow=true;return ESP_FAIL;}
         response->data.append(static_cast<const char*>(event->data),event->data_len);
     }
     return ESP_OK;
@@ -269,8 +272,9 @@ void worker(void*) {
     int64_t probe_at=0;
     for(;;){
         if(!access.empty()){
-            char permissions[512];xSemaphoreTake(view_lock,portMAX_DELAY);snprintf(permissions,sizeof(permissions),"%s",view.permissions);xSemaphoreGive(view_lock);
+            char permissions[2048];xSemaphoreTake(view_lock,portMAX_DELAY);snprintf(permissions,sizeof(permissions),"%s",view.permissions);xSemaphoreGive(view_lock);
             if(products_handle_next(permissions,settings.api,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport))continue;
+            if(contacts_handle_next(permissions,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport))continue;
         }
         Command cmd{};
         if(xQueueReceive(commands,&cmd,pdMS_TO_TICKS(1000))!=pdTRUE){
@@ -382,8 +386,12 @@ void pressed(lv_event_t* e){
     wipe(&cmd,sizeof(cmd));
 }
 void navigate_to(lv_event_t* e){auto target=static_cast<Page>(reinterpret_cast<uintptr_t>(lv_event_get_user_data(e)));publish(target,"Preencha os campos para continuar.");}
-void products_home(){browsing_products=false;publish(Page::Session,"Menu principal.");}
+void products_home(){browsing_contacts=false;browsing_products=false;publish(Page::Session,"Menu principal.");}
 void dashboard_action(DashboardAction action){
+    if(action==DashboardAction::Customers){
+        static View snapshot;xSemaphoreTake(view_lock,portMAX_DELAY);snapshot=view;xSemaphoreGive(view_lock);
+        browsing_contacts=true;dashboard_hide();contacts_open(snapshot.permissions,snapshot.light,!has_module_permission(snapshot.permissions,"customers.read"));return;
+    }
     if(action==DashboardAction::Products){
         static View snapshot;xSemaphoreTake(view_lock,portMAX_DELAY);snapshot=view;xSemaphoreGive(view_lock);
         browsing_products=true;dashboard_hide();products_open(snapshot.permissions,snapshot.light);return;
@@ -399,10 +407,10 @@ void render(lv_timer_t*) {
     if(next.serial==rendered_serial)return;
     if(next.page==Page::Session && next.authenticated){
         lv_obj_add_flag(panel,LV_OBJ_FLAG_HIDDEN);lv_obj_add_flag(home_button,LV_OBJ_FLAG_HIDDEN);
-        if(!browsing_products)dashboard_show(next.identity,next.permissions,next.light,next.busy || strcmp(next.message,next.identity)==0?"":next.message);
+        if(!browsing_products&&!browsing_contacts)dashboard_show(next.identity,next.permissions,next.light,next.busy || strcmp(next.message,next.identity)==0?"":next.message);
         rendered=next.page;rendered_serial=next.serial;return;
     }
-    browsing_products=false;products_hide();dashboard_hide();lv_obj_remove_flag(panel,LV_OBJ_FLAG_HIDDEN);
+    browsing_products=false;browsing_contacts=false;products_hide();contacts_hide();dashboard_hide();lv_obj_remove_flag(panel,LV_OBJ_FLAG_HIDDEN);
     if(next.authenticated){lv_obj_remove_flag(home_button,LV_OBJ_FLAG_HIDDEN);}
     else lv_obj_add_flag(home_button,LV_OBJ_FLAG_HIDDEN);
     lv_group_set_default(input_group);
@@ -457,6 +465,7 @@ void authentication_start(lv_display_t* display,bool sd_writable){
     home_button=lv_button_create(panel);lv_obj_set_pos(home_button,824,0);lv_obj_set_size(home_button,204,44);lv_label_set_text(lv_label_create(home_button),"Menu principal");lv_obj_add_event_cb(home_button,pressed,LV_EVENT_CLICKED,reinterpret_cast<void*>(static_cast<uintptr_t>(Action::Home)));lv_obj_add_flag(home_button,LV_OBJ_FLAG_HIDDEN);
     dashboard_create(display,dashboard_action);
     products_create(display,products_home);
+    contacts_create(display,products_home);
     lv_timer_create(render,100,nullptr);
     auto style_button=[](lv_obj_t* button){lv_obj_set_style_bg_color(button,lv_color_hex(0x334155),LV_PART_MAIN);lv_obj_set_style_bg_color(button,lv_color_hex(0x475569),LV_PART_MAIN|LV_STATE_PRESSED);lv_obj_set_style_text_color(button,lv_color_hex(0xf8fafc),LV_PART_MAIN);auto* text=lv_obj_get_child(button,0);lv_obj_set_style_text_color(text,lv_color_hex(0xf8fafc),0);lv_obj_center(text);};
     for(auto* button:buttons)style_button(button);

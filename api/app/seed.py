@@ -2,7 +2,7 @@ from sqlalchemy import select
 from .models import Permission, Role
 
 PERMISSIONS = {
-    "products": "read create update delete", "customers": "read create update",
+    "products": "read create update delete", "customers": "read create update delete documents", "suppliers": "read create update delete documents",
     "sales": "read create cancel discount", "inventory": "read adjust",
     "cash": "open close withdraw deposit", "reports": "read financial",
     "users": "read create update disable", "settings": "read update",

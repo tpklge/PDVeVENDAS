@@ -24,6 +24,12 @@ jobs:
             -v "$PWD/docker/secrets/api_admin_password:/run/test/admin_password:ro" \
             -v "$PWD/tools/test_products_mariadb.py:/run/test/products.py:ro" \
             api python /run/test/products.py
+      - name: Clientes e fornecedores no MariaDB real
+        run: |
+          docker compose --env-file docker/.env -f docker/compose.yaml run --rm -T --no-deps \
+            -e CI=true \
+            -v "$PWD/tools/test_contacts_mariadb.py:/run/test/contacts.py:ro" \
+            api python /run/test/contacts.py
       - name: Testar persistência e backup restaurado
         env:
           SKIP_PUBLIC_HTTPS: "1"

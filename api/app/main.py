@@ -39,7 +39,7 @@ async def validation_error(request, exc):
     labels = {"sku": "SKU", "barcode": "GTIN/EAN e dígito verificador", "name": "Nome", "category": "Categoria",
         "sale_price": "Preço de venda (até 2 casas)", "cost_price": "Preço de custo (até 2 casas)",
         "stock": "Estoque (até 3 casas)", "stock_min": "Estoque mínimo", "stock_max": "Estoque máximo",
-        "ncm": "NCM (8 dígitos)", "cest": "CEST (7 dígitos)", "origin": "Origem (0 a 8)"}
+        "ncm": "NCM (8 dígitos)", "cest": "CEST (7 dígitos)", "origin": "Origem (0 a 8)", "document": "CPF/CNPJ", "person_type": "Tipo PF/PJ", "email": "E-mail", "state": "UF", "postal_code": "CEP", "address": "Endereço", "city": "Cidade", "notes": "Observações"}
     names = sorted({labels.get(str(error["loc"][-1]), "campos informados") for error in exc.errors()})
     return error_response(request, 422, "VALIDATION_ERROR", "Verifique: " + ", ".join(names) + ".")
 
@@ -88,7 +88,7 @@ def ready(db: Db):
 
 @app.get("/api/v1/system/status")
 def status():
-    return {"version": VERSION, "api_version": "v1", "capabilities": ["auth", "rbac", "products", "catalog_snapshot"], "commercial_operations": False}
+    return {"version": VERSION, "api_version": "v1", "capabilities": ["auth", "rbac", "products", "catalog_snapshot", "customers", "suppliers"], "commercial_operations": False}
 
 
 @app.post("/api/v1/auth/login")
@@ -182,3 +182,6 @@ def users(db: Db, user: Annotated[User, Depends(allowed("users.read"))],
 
 from .products import router as products_router
 app.include_router(products_router)
+
+from .contacts import router as contacts_router
+app.include_router(contacts_router)

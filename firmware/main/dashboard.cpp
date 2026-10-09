@@ -14,7 +14,7 @@ unsigned count=0;
 lv_group_t* group;
 DashboardCallback callback;
 bool light_theme=false;
-const char* names[]={"Início", "Produtos", "Clientes", "Vendas / PDV", "Estoque", "Relatórios", "Minha sessão"};
+const char* names[]={"Início", "Produtos", "Clientes / fornecedores", "Vendas / PDV", "Estoque", "Relatórios", "Minha sessão"};
 const char* required[]={nullptr,"products.read","customers.read","sales.read","inventory.read","reports.read",nullptr};
 bool allowed[7]{};
 char session_identity[1536]{};
@@ -22,7 +22,7 @@ char session_identity[1536]{};
 void home(){
     lv_label_set_text(title,"Visão geral");
     lv_label_set_text(body,"Bem-vindo ao TAB5 ERP\n\nEscolha um módulo no menu lateral.\n\n"
-        "Produtos já disponíveis. Clientes, vendas, estoque e relatórios em preparação.\n\n"
+        "Produtos, clientes e fornecedores disponíveis. Vendas, estoque e relatórios em preparação.\n\n"
         "Sua conexão e sessão podem ser acompanhadas nesta tela.\n"
         "Catálogo de produtos: atualize o cache dentro do módulo Produtos.\n\n"
         "Teclado: Tab / Shift+Tab navegam; Enter seleciona; Esc volta ao início.");
@@ -36,6 +36,7 @@ void key_event(lv_event_t* event){
 void module_event(lv_event_t* event){
     unsigned index=static_cast<unsigned>(reinterpret_cast<uintptr_t>(lv_event_get_user_data(event)));
     if(!index){home();return;}
+    if(index==2 && allowed[index]){callback(DashboardAction::Customers);return;}
     if(index==1 && allowed[index]){callback(DashboardAction::Products);return;}
     lv_label_set_text(title,names[index]);
     lv_label_set_text(body,index==6?session_identity:allowed[index]?
@@ -79,13 +80,14 @@ void dashboard_create(lv_display_t* display,DashboardCallback cb){
     const char* actions[]={"Rede / servidor","Senha ERP","Trocar tema","Bloquear","Sair"};
     const DashboardAction codes[]={DashboardAction::Network,DashboardAction::Password,DashboardAction::Theme,DashboardAction::Lock,DashboardAction::Logout};
     for(unsigned i=0;i<5;++i){auto* obj=button(root,actions[i],12+i*244,588,230);lv_obj_add_event_cb(obj,action_event,LV_EVENT_CLICKED,reinterpret_cast<void*>(static_cast<uintptr_t>(codes[i])));}
-    auto* hint=lv_label_create(root);lv_obj_set_pos(hint,12,656);lv_label_set_text(hint,"TAB5 ERP v0.5.0 | Configurações no microSD | pt-BR");
+    auto* hint=lv_label_create(root);lv_obj_set_pos(hint,12,656);lv_label_set_text(hint,"TAB5 ERP v0.6.0 | Configurações no microSD | pt-BR");
     home();apply_theme(false);lv_obj_add_flag(root,LV_OBJ_FLAG_HIDDEN);
 }
 void dashboard_show(const char* identity,const char* permissions,bool light,const char* notice){
     const bool hidden=lv_obj_has_flag(root,LV_OBJ_FLAG_HIDDEN);
     snprintf(session_identity,sizeof(session_identity),"%s",identity);
     for(unsigned i=0;i<7;++i){allowed[i]=has_module_permission(permissions,required[i]);}
+    allowed[2]=has_module_permission(permissions,"customers.read")||has_module_permission(permissions,"suppliers.read");
     lv_label_set_text(notice_label,notice);
     apply_theme(light);lv_obj_remove_flag(root,LV_OBJ_FLAG_HIDDEN);
     lv_group_set_default(group);

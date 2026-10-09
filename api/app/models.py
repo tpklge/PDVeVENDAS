@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table, Text, Numeric, CheckConstraint
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table, Text, Numeric, CheckConstraint, UniqueConstraint
 from decimal import Decimal
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -122,3 +122,32 @@ class Product(Base):
     version: Mapped[int] = mapped_column(default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+
+class Contact(Base):
+    __tablename__ = "contacts"
+    __table_args__ = (UniqueConstraint("kind", "document", name="uq_contact_document"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(16), index=True)
+    name: Mapped[str] = mapped_column(String(120), index=True)
+    person_type: Mapped[str] = mapped_column(String(2))
+    document: Mapped[str | None] = mapped_column(String(14))
+    trade_name: Mapped[str] = mapped_column(String(120), default="")
+    phone: Mapped[str] = mapped_column(String(32), default="")
+    email: Mapped[str] = mapped_column(String(160), default="")
+    address: Mapped[str] = mapped_column(String(200), default="")
+    city: Mapped[str] = mapped_column(String(80), default="")
+    state: Mapped[str] = mapped_column(String(2), default="")
+    postal_code: Mapped[str] = mapped_column(String(8), default="")
+    contact_name: Mapped[str] = mapped_column(String(120), default="")
+    notes: Mapped[str] = mapped_column(String(500), default="")
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    version: Mapped[int] = mapped_column(default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+
+class SupplierProduct(Base):
+    __tablename__ = "supplier_products"
+    supplier_id: Mapped[int] = mapped_column(ForeignKey("contacts.id"), primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), primary_key=True)

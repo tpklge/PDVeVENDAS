@@ -1,7 +1,7 @@
 #pragma once
 #include "lvgl.h"
 namespace tab5 {
-enum class DashboardAction { Network, Password, Logout, Lock, Theme, Products };
+enum class DashboardAction { Network, Password, Logout, Lock, Theme, Products, Customers };
 using DashboardCallback = void (*)(DashboardAction);
 void dashboard_create(lv_display_t* display, DashboardCallback callback);
 void dashboard_show(const char* identity, const char* permissions, bool light,const char* notice);

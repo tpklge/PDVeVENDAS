@@ -20,7 +20,7 @@ def test_health_and_migrations(environment):
     assert client.get("/api/v1/system/status").json()["commercial_operations"] is False
     with factory() as db:
         assert len(list(db.scalars(select(Role)))) == 4
-        assert len(list(db.scalars(select(Permission)))) == 25
+        assert len(list(db.scalars(select(Permission)))) == 32
 
 
 def test_mandatory_password_change_and_revocation(environment):
