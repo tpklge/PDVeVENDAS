@@ -81,7 +81,7 @@ void dashboard_create(lv_display_t* display,DashboardCallback cb){
     const char* actions[]={"Rede / servidor","Senha ERP","Trocar tema","Bloquear","Sair"};
     const DashboardAction codes[]={DashboardAction::Network,DashboardAction::Password,DashboardAction::Theme,DashboardAction::Lock,DashboardAction::Logout};
     for(unsigned i=0;i<5;++i){auto* obj=button(root,actions[i],12+i*244,588,230);lv_obj_add_event_cb(obj,action_event,LV_EVENT_CLICKED,reinterpret_cast<void*>(static_cast<uintptr_t>(codes[i])));}
-    auto* hint=lv_label_create(root);lv_obj_set_pos(hint,12,656);lv_label_set_text(hint,"TAB5 ERP v0.7.0 | Configurações no microSD | pt-BR");
+    auto* hint=lv_label_create(root);lv_obj_set_pos(hint,12,656);lv_label_set_text(hint,"TAB5 ERP v0.7.1 | Configurações no microSD | pt-BR");
     home();apply_theme(false);lv_obj_add_flag(root,LV_OBJ_FLAG_HIDDEN);
 }
 void dashboard_show(const char* identity,const char* permissions,bool light,const char* notice){

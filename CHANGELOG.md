@@ -1,5 +1,11 @@
 # Histórico
 
+## 0.7.1 — fechamento de venda mais claro
+
+- Revisar e cobrar → Confirmar pagamento e concluir → Venda concluída.
+- Botão de confirmação ampliado para manter a legenda inteira visível.
+- Usuário confirmou vendas funcionando na etapa 0.7.0.
+
 ## 0.7.0 — vendas / PDV implementada; validação física pendente
 
 - Carrinho, descontos autorizados, pagamentos mistos e troco em dinheiro.

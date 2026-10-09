@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from sqlalchemy import URL
 
-VERSION = "0.7.0"
+VERSION = "0.7.1"
 SCHEMA_REVISION = "004_sales"
 
 def database_url():
