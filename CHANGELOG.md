@@ -7,6 +7,7 @@
 - Recuperação criptografada no microSD e resolução contra envio atrasado.
 - Histórico, compras por cliente e cancelamento comercial integral auditado.
 - Migração incremental preserva dados e registra saldo inicial de estoque.
+- 27 testes da API e concorrência/backup em MariaDB AMD64/ARM64 aprovados.
 
 ## 0.6.0 — clientes e fornecedores validada
 
