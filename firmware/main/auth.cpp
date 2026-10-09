@@ -293,8 +293,10 @@ int product_transport(const char* method,const char* path,const char* body,char*
     if(access.empty())return 401;
     if(esp_timer_get_time()>=refresh_at){
         auto body=body_for("refresh_token",refresh_token.c_str(),nullptr,nullptr,true);Response refreshed;bool change=false;
+        int owner=offline_user();
         int status=request("/api/v1/auth/refresh",body.c_str(),refreshed);wipe(body.data(),body.size());
         if(status!=200 || !tokens(refreshed,change)){clear_session();publish(Page::Login,"Sessão expirada. Entre novamente.");return 401;}
+        offline_set_user(owner); // Refresh keeps the same operator; local drafts retain their scope.
     }
     auto verb=strcmp(method,"PUT")==0?HTTP_METHOD_PUT:strcmp(method,"DELETE")==0?HTTP_METHOD_DELETE:strcmp(method,"POST")==0?HTTP_METHOD_POST:HTTP_METHOD_GET;
     int code=request(path,body,response,true,verb);
