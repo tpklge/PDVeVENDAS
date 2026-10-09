@@ -1,16 +1,24 @@
 # Armazenamento e sincronização
 
-v0.1.0 monta SDMMC/FATFS, testa escrita em /sdcard/ERP e registra log limitado em
-/ERP/logs/platform.log. Não existem cache SQL/JSON ou fila comercial nesta etapa.
-Não criar banco vazio só para aparentar funcionalidade.
+Configurações no microSD em /sdcard/ERP/config/settings.enc, AES-256-GCM com chave
+derivada do PIN; desbloquear após reinício. Tema também no microSD. Não usar NVS
+para configurações/dados ERP. Atualização OTA preserva formatos e arquivos existentes.
+Cache paginado de produtos suporta consultas; contatos são mantidos apenas em RAM.
 
-Planejado: cache de catálogo incremental com cursor servidor; indicar dados antigos.
-Fila segura somente depois de testes de falha: UUID, idempotência, usuário/dispositivo,
-estado, tentativas, último erro. Persistir antes de enviar e não perder rejeitados.
-Revalidar sessão/RBAC/preço/estoque/caixa no servidor. Não sobrescrever conflitos.
-Offline inicial permite consultas/rascunhos; não confirma venda definitiva.
+Pendências protegidas no microSD ANTES de enviar:
+/ERP/pdv/pending.enc (vendas), /ERP/inventory/pending.enc (estoque),
+/ERP/finance/pending.enc (caixa/categorias/contas/baixas).
+Vínculo PIN, operador, terminal e URL API; sem tokens ou senhas no pedido.
+Uma tentativa por módulo. Reenvio preserva corpo/chave. Resolver confirma o resultado
+ou encerra a chave na API, impedindo envio tardio. Só limpar após confirmação;
+falha/corrupção/escopo incompatível preserva arquivo e bloqueia novos envios do módulo.
 
-Sem SD: menu continua; operação que exigir fila persistente será desabilitada.
-Nenhuma venda financeira pendente ficará exclusivamente em RAM. FATFS não promete
-atomicidade absoluta após queda de energia. Corrupção, espaço cheio, remoção e
-recuperação serão testados na v0.11.0 antes de habilitar operações pendentes.
+Pendências não impedem desbloquear/logar para recuperá-las. Impedem trocar PIN,
+URL API e restaurar configurações; rede Wi-Fi pode ser reconfigurada. Fechar caixa
+no Tab5 exige resolver pendências de vendas/estoque. Estado definitivo no MariaDB.
+
+Operações comerciais ainda exigem conexão e confirmação da API; não existe venda
+financeira definitiva offline. Offline/incremental e filas avançadas pertencem à
+0.11, com testes de corrupção, conflitos e recuperação. FATFS não garante atomicidade
+absoluta após perda de energia; arquivos contam com gravação protegida e backup.
+Sem cartão gravável, não enviar operação que exija registro persistente.

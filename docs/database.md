@@ -1,13 +1,24 @@
 # Banco de dados
 
-Arquitetura alvo: MariaDB 11.8 LTS/InnoDB/utf8mb4, UTC, DECIMAL para dinheiro e
-chaves estrangeiras/índices. Cliente acessa somente API. Migrações com Alembic.
+MariaDB 11.8.8/InnoDB/utf8mb4, UTC, Numeric/Decimal para dinheiro, chaves
+estrangeiras e índices. Cliente acessa somente API HTTPS; MariaDB sem porta pública.
+Usuários SQL de aplicação (CRUD) e migração (DDL) separados; sem administração global.
+Migrações Alembic incrementais até 006_cash. SQL equivalentes em database/migrations.
+Não reimportar schema.sql em instalações existentes nem apagar volumes para atualizar.
 
-Não existe banco operacional nesta branch da plataforma. O schema de autenticação
-preparado está isolado na branch local work/backend-preparation. Não representa
-o schema comercial completo e não deve ser apresentado como banco final do ERP.
+Autenticação: users, roles, permissions, sessions e auditoria; produtos/categorias e
+revisão de catálogo; clientes/fornecedores/vínculos; sales/sale_items/sale_payments/
+sale_requests e stock_movements; inventory_requests.
+0.9 acrescenta cash_sessions, cash_movements, financial_categories,
+financial_accounts, financial_settlements e finance_requests.
 
-O schema completo evoluirá na v0.2.0 e módulos posteriores, com SQL equivalente
-às revisões e testes MariaDB reais: volume vazio, volume existente, integridade,
-privilégios mínimos, backup/restore e concorrência. A API usa usuário CRUD separado
-do usuário DDL; nenhum deles terá GRANT OPTION ou administração global.
+Ledger de caixa registra movimentos assinados e pagamentos por forma, dinheiro
+líquido de troco. Fechamento preserva fotografia dos totais. Não atribui vendas
+históricas a caixa retroativamente. Baixas de contas parciais usam versão e não
+podem exceder saldo. Chaves idempotentes por operador/terminal protegem reenvio.
+Bloqueio de catálogo compartilhado serializa vendas/estoque/financeiro; conexões
+MariaDB usam READ COMMITTED. Saldo/ledger/auditoria/resultado na mesma transação.
+
+Procedimentos reais de backup/restauração em docker/scripts; atualizações de módulo
+fazem backup antes da migração. CI testa MariaDB AMD64/ARM64 com concorrência e
+restauração isolada. Ver [regras e atualização 0.9](releases/v0.9.0.md).

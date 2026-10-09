@@ -1,20 +1,19 @@
-# API TAB5 ERP 0.5.0
+# API TAB5 ERP 0.9.0
 
-FastAPI, JSON UTF-8, /api/v1. Autenticação/RBAC existentes preservados.
-Capabilities auth, rbac, products, catalog_snapshot. Schema esperado 002_products.
-A API não implementa PDV nesta etapa. Autenticação opaca, refresh rotativo,
-revogação e senha ERP de pelo menos 8 caracteres continuam em vigor.
+FastAPI, JSON UTF-8, /api/v1, schema esperado 006_cash. HTTPS via Traefik.
+Autenticação opaca, refresh rotativo, revogação, RBAC e senha ERP mínimo 8 caracteres.
+Capabilities auth, rbac, products, catalog_snapshot, customers, suppliers, sales,
+declared_payments, inventory, cash, finance. OpenAPI gerado pela aplicação.
 
-Ver [release de produtos](releases/v0.5.0.md) para migração, endpoints, campos,
-permissões, cache e testes. Documentação OpenAPI é gerada pela aplicação.
+Produtos/categorias: [contratos 0.5](releases/v0.5.0.md).
+Clientes/fornecedores, documentos e histórico: [contratos 0.6](releases/v0.6.0.md).
+Vendas/PDV, pagamentos declarados, idempotência/cancelamento: [0.7](releases/v0.7.0.md).
+Saldo, entradas/saídas/ajustes e recuperação: [0.8](releases/v0.8.0.md).
+Caixa, categorias financeiras, contas e baixas: [0.9](releases/v0.9.0.md).
 
-## Clientes e fornecedores — 0.6.0
-
-GET/POST `/api/v1/customers` e `/api/v1/suppliers`; GET/PUT/DELETE por ID.
-POST `/{módulo}/search` pesquisa nome/documento no corpo, com paginação por ID.
-GET `/{módulo}/{id}/history` mostra eventos de alterações; compras dependem do PDV.
-GET/POST `/suppliers/{id}/products` e DELETE `/suppliers/{id}/products/{product_id}`.
-Documento opcional, CPF/CNPJ numérico/alfanumérico; permissões `.documents`
-separadas de leitura/edição. Dados pessoais ficam somente na RAM do Tab5;
-listagens mínimas e auditoria sem os valores dos campos pessoais.
-Ver [migração, permissões e teste físico](releases/v0.6.0.md).
+API 0.9 exige caixa aberto no operador/terminal para concluir novas vendas.
+Troco só em dinheiro, pagamentos separados por forma. Contas financeiras manuais
+não são recebíveis gerados automaticamente de pagamentos já declarados de vendas.
+Operações financeiras possuem chaves idempotentes e resolução contra envio tardio.
+Listagens de caixa/contas usam limit máximo 25, after_id e next_id; Tab5 usa 8.
+Consultar a release correspondente para permissões, campos e migração.

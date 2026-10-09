@@ -268,4 +268,5 @@ def resolve(key:str,user:CashRead,current:Current,db:Db,request:Request):
     row=db.scalar(select(FinanceRequest).where(FinanceRequest.user_id==user.id,FinanceRequest.device_id==current[0].device_id,FinanceRequest.idempotency_key==key).with_for_update())
     if not row:
         row=FinanceRequest(user_id=user.id,device_id=current[0].device_id,idempotency_key=key,request_hash='',state='abandoned',operation='resolve');db.add(row);db.flush();record(db,request,user,'finance.resolve','finance_requests',row.id);db.commit()
+    if row.operation in ('category','account','settlement'):permission(user,'reports.financial')
     return {'state':row.state,'result':json.loads(row.result) if row.result else None,'operation':row.operation}
