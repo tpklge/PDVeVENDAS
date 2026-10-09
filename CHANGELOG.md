@@ -8,6 +8,7 @@
 - RBAC adicional para valores financeiros; nenhum documento pessoal em relatórios.
 - Migração 007_reports acrescenta apenas índices; atualização com backup.
 - 45 testes API e build ESP32-P4 aprovados localmente.
+- CI MariaDB AMD64/ARM64, relatórios, backup/restore e firmware aprovados (417a455).
 
 ## 0.9.0 — fluxo básico de caixa validado no Tab5
 
