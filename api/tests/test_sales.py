@@ -9,6 +9,7 @@ from test_products import credentials, product
 def prepare(environment, **changes):
     client,_=environment
     auth=credentials(environment)
+    assert client.post("/api/v1/finance/cash/open",headers=auth,json={"amount":"100","reason":"Fundo inicial teste","idempotency_key":"sales-open-cash-test-0001"}).status_code==201
     row=client.post('/api/v1/products',headers=auth,json=product(stock='10',sale_price='190',**changes)).json()
     body={'idempotency_key':'test-sale-unique-key-0001','items':[{'product_id':row['id'],'product_version':row['version'],'expected_unit_price':row['sale_price'],'quantity':'1'}], 'payments':[{'method':'cash','amount':'200'}]}
     return auth,row,body

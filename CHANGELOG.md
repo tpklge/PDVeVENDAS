@@ -1,6 +1,17 @@
 # Histórico
 
-## 0.8.0 — estoque implementado; validação física pendente
+## 0.9.0 — caixa e financeiro implementados; validação física pendente
+
+- Desbloqueio: pausas por tempo, mantendo PBKDF2 200.000 e arquivos existentes.
+- Wi-Fi e verificações da API preservados; desbloqueio permite recuperar pendências.
+- Abertura por operador/terminal, sangria, suprimento, fechamento e histórico.
+- Vendas integram caixa, pagamentos mistos e troco; fechamento imutável e auditado.
+- Categorias, contas a pagar/receber, baixas parciais e filtros por vencimento.
+- Recuperação financeira criptografada no microSD e barreira contra envio tardio.
+- Migração aditiva 006_cash; backup antes de atualizar, sem alterar credenciais.
+- Usuário aprovou os testes de estoque 0.8.0.
+
+## 0.8.0 — estoque validado no Tab5
 
 - API de saldo, estoque mínimo e histórico de movimentos.
 - Entradas, saídas e ajustes justificados, com versão e idempotência.

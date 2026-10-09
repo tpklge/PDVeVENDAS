@@ -101,6 +101,7 @@ def test_inventory_failure_rolls_back_balance_movement_request_and_audit(environ
 def test_sales_and_inventory_share_balance_and_revision(environment):
     client,_ = environment
     auth,row = prepare(environment)
+    assert client.post("/api/v1/finance/cash/open",headers=auth,json={"amount":"100","reason":"Fundo inicial teste","idempotency_key":"inventory-open-cash-test-0001"}).status_code==201
     client.post('/api/v1/inventory/adjustments',headers=auth,json=request(row))
     current = client.get(f'/api/v1/products/{row["id"]}',headers=auth).json()
     sale = {'idempotency_key':'sale-after-inventory-0001','items':[{'product_id':row['id'],

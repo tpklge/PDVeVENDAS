@@ -5,6 +5,7 @@
 #include "module_policy.hpp"
 #include "sales.hpp"
 #include "inventory.hpp"
+#include "cash.hpp"
 #include <sys/stat.h>
 #include "sdkconfig.h"
 
@@ -74,6 +75,7 @@ bool browsing_products=false;
 bool browsing_contacts=false;
 bool browsing_sales=false;
 bool browsing_inventory=false;
+bool browsing_cash=false;
 esp_netif_t* netif=nullptr;
 String access, refresh_token;
 char device_id[32]{};
@@ -100,7 +102,8 @@ struct PendingSale { uint32_t format; int user; char api[160]; char device[32]; 
 struct SaleEnvelope { uint32_t format; uint8_t iv[12],tag[16],data[sizeof(PendingSale)]; };
 bool pending_record_exists(const char* path){char backup[96];snprintf(backup,sizeof(backup),"%s.bak",path);FILE* f=fopen(path,"rb");if(!f)f=fopen(backup,"rb");if(!f)return false;fclose(f);return true;}
 constexpr char inventory_journal_path[]="/sdcard/ERP/inventory/pending.enc";
-bool pending_operation_exists(){return pending_record_exists(journal_path)||pending_record_exists(inventory_journal_path);}
+constexpr char finance_journal_path[]="/sdcard/ERP/finance/pending.enc";
+bool pending_operation_exists(){return pending_record_exists(journal_path)||pending_record_exists(inventory_journal_path)||pending_record_exists(finance_journal_path);}
 
 int protected_journal(const char* operation,int user,char* request,size_t capacity,const char* path,const char* aad){
     if(!unlocked||!card_ready)return -1;
@@ -122,6 +125,10 @@ int protected_journal(const char* operation,int user,char* request,size_t capaci
 
 int sale_journal(const char* operation,int user,char* request,size_t capacity){return protected_journal(operation,user,request,capacity,journal_path,"TAB5 ERP pending sale v1");}
 int inventory_journal(const char* operation,int user,char* request,size_t capacity){return protected_journal(operation,user,request,capacity,inventory_journal_path,"TAB5 ERP pending inventory v1");}
+int finance_journal(const char* operation,int user,char* request,size_t capacity){
+    if(!strcmp(operation,"can-close"))return !pending_record_exists(journal_path)&&!pending_record_exists(inventory_journal_path);
+    return protected_journal(operation,user,request,capacity,finance_journal_path,"TAB5 ERP pending finance v1");
+}
 
 void clear_session() { xSemaphoreTake(view_lock,portMAX_DELAY);view.authenticated=false;xSemaphoreGive(view_lock); if(!access.empty())wipe(access.data(),access.size()); if(!refresh_token.empty())wipe(refresh_token.data(),refresh_token.size()); access.clear();refresh_token.clear();refresh_at=0; }
 bool derive(const char* password,const uint8_t* salt,uint8_t* result,unsigned iterations=200000) {
@@ -133,13 +140,20 @@ bool derive(const char* password,const uint8_t* salt,uint8_t* result,unsigned it
     if(rc==0)rc=mbedtls_md_hmac_update(&ctx,block,sizeof(block));
     if(rc==0)rc=mbedtls_md_hmac_finish(&ctx,u);
     memcpy(result,u,32);
+    const int64_t started=esp_timer_get_time();
+    int64_t last_pause=started;unsigned pauses=0;
     for(unsigned i=1;i<iterations && rc==0;++i){
         rc=mbedtls_md_hmac_reset(&ctx);
         if(rc==0)rc=mbedtls_md_hmac_update(&ctx,u,32);
         if(rc==0)rc=mbedtls_md_hmac_finish(&ctx,u);
         for(unsigned j=0;j<32;++j)result[j]^=u[j];
-        if((i&511)==0)vTaskDelay(1);
+        // Check in batches, but pause only after 40 ms of computation.
+        // Preserve PBKDF2 bytes and allow idle/UI tasks to run regularly.
+        if((i&511)==0 && esp_timer_get_time()-last_pause>=40000){
+            vTaskDelay(1);last_pause=esp_timer_get_time();++pauses;
+        }
     }
+    if(iterations==200000)ESP_LOGI("auth","KDF local: %lld ms; pausas: %u",(long long)((esp_timer_get_time()-started)/1000),pauses);
     wipe(u,sizeof(u));mbedtls_md_free(&ctx);if(rc!=0)wipe(result,32);return rc==0;
 }
 bool crypt(bool encrypt,const uint8_t* cipher_key,Envelope& e,Settings& s) {
@@ -308,6 +322,7 @@ void worker(void*) {
             char permissions[2048];xSemaphoreTake(view_lock,portMAX_DELAY);snprintf(permissions,sizeof(permissions),"%s",view.permissions);xSemaphoreGive(view_lock);
             if(products_handle_next(permissions,settings.api,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport))continue;
             if(contacts_handle_next(permissions,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport))continue;
+            if(cash_handle_next(permissions,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport,finance_journal))continue;
             if(inventory_handle_next(permissions,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport,inventory_journal))continue;
             if(sales_handle_next(permissions,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport,sale_journal))continue;
         }
@@ -335,7 +350,6 @@ void worker(void*) {
             if(esp_timer_get_time()<lock_until){publish(current,"Muitas tentativas. Aguarde antes de tentar novamente.");wipe(&cmd,sizeof(cmd));continue;}
             bool initial=cmd.action==Action::Provision;
             if(initial && envelope.format==1){publish(current,"Administrador local já configurado.");wipe(&cmd,sizeof(cmd));continue;}
-            if(pending_operation_exists()){publish(Page::Configure,"Resolva a operação pendente em Vendas/Estoque antes de alterar a senha local.");wipe(&cmd,sizeof(cmd));continue;}
             uint8_t candidate[32]{};Settings opened{};
             bool ok=strlen(cmd.fields[0])>= (initial?4u:1u);
             if(initial && ok){random_bytes(envelope.salt,16);}
@@ -354,7 +368,7 @@ void worker(void*) {
             String url=cmd.fields[2];while(!url.empty()&&url.back()=='/')url.pop_back();
             bool valid=strlen(cmd.fields[0])>0 && strlen(cmd.fields[0])<=32 && strlen(cmd.fields[1])<=64 && url.size()<sizeof(settings.api) && url.rfind("https://",0)==0 && url.size()>8 && url.find_first_of(" @?#\r\n") == String::npos;
             if(!valid)publish(Page::Configure,"Confira SSID, senha e URL HTTPS da API.");
-            else if(pending_operation_exists() && url != settings.api)publish(Page::Configure,"Resolva a operação pendente em Vendas/Estoque antes de alterar a API.");
+            else if(pending_operation_exists() && url != settings.api)publish(Page::Configure,"Resolva a operação pendente em Vendas/Estoque/Financeiro antes de alterar a API.");
             else{clear_session();memcpy(settings.ssid,cmd.fields[0],strlen(cmd.fields[0])+1);memcpy(settings.password,cmd.fields[1],strlen(cmd.fields[1])+1);snprintf(settings.api,sizeof(settings.api),"%s",url.c_str());
                 config_view();if(!save())publish(Page::Configure,"Falha ao salvar configuração.");
                 else if(!connect_wifi())publish(Page::Configure,"Configuração salva. Wi-Fi indisponível; confira rede/senha e C6.");
@@ -383,7 +397,7 @@ void worker(void*) {
             else publish(Page::Password,"API recusou a alteração. Tente entrar novamente.");
         }else if(cmd.action==Action::Logout){Response response;int code=request("/api/v1/auth/logout","",response,true);clear_session();publish(Page::Login,code==204?"Sessão encerrada.":"Sessão removida deste dispositivo; revogação remota não confirmada.");}
         else if(cmd.action==Action::LocalPassword){
-            if(pending_operation_exists()){publish(Page::Configure,"Resolva a operação pendente em Vendas/Estoque antes de alterar a senha local.");wipe(&cmd,sizeof(cmd));continue;}
+            if(pending_operation_exists()){publish(Page::Configure,"Resolva a operação pendente em Vendas/Estoque/Financeiro antes de alterar a senha local.");wipe(&cmd,sizeof(cmd));continue;}
             uint8_t candidate[32]{};Settings opened{};
             bool ok=derive(cmd.fields[0],envelope.salt,candidate)&&crypt(false,candidate,envelope,opened)&&strlen(cmd.fields[1])>=4;
             Envelope old=envelope;uint8_t old_key[32];memcpy(old_key,key,32);
@@ -400,7 +414,7 @@ void worker(void*) {
         }
         else if(cmd.action==Action::Lock){clear_session();if(wifi_started)esp_wifi_disconnect();unlocked=false;wipe(key,32);wipe(&settings,sizeof(settings));publish(Page::Unlock,"Configuração bloqueada. Entre como admin-local.");}
         else if(cmd.action==Action::Reset){
-            if(pending_operation_exists())publish(Page::Configure,"Resolva a operação pendente em Vendas/Estoque antes de restaurar o Tab5.");
+            if(pending_operation_exists())publish(Page::Configure,"Resolva a operação pendente em Vendas/Estoque/Financeiro antes de restaurar o Tab5.");
             else if(!erase_settings_files("/sdcard/ERP/config/theme.bin") || !erase_settings_files(settings_path))publish(Page::Configure,"Falha ao remover configuração. Nenhum reinício executado.");
             else{clear_session();wipe(key,32);wipe(&settings,sizeof(settings));wipe(&envelope,sizeof(envelope));wipe(&cmd,sizeof(cmd));esp_restart();}
         }
@@ -425,8 +439,12 @@ void pressed(lv_event_t* e){
     wipe(&cmd,sizeof(cmd));
 }
 void navigate_to(lv_event_t* e){auto target=static_cast<Page>(reinterpret_cast<uintptr_t>(lv_event_get_user_data(e)));publish(target,"Preencha os campos para continuar.");}
-void products_home(){browsing_inventory=false;browsing_sales=false;browsing_contacts=false;browsing_products=false;publish(Page::Session,"Menu principal.");}
+void products_home(){browsing_cash=false;browsing_inventory=false;browsing_sales=false;browsing_contacts=false;browsing_products=false;publish(Page::Session,"Menu principal.");}
 void dashboard_action(DashboardAction action){
+    if(action==DashboardAction::Cash){
+        static View snapshot;xSemaphoreTake(view_lock,portMAX_DELAY);snapshot=view;xSemaphoreGive(view_lock);
+        browsing_cash=true;dashboard_hide();cash_open(snapshot.permissions,snapshot.light);return;
+    }
     if(action==DashboardAction::Inventory){
         xSemaphoreTake(view_lock,portMAX_DELAY);View snapshot=view;xSemaphoreGive(view_lock);
         browsing_inventory=true;dashboard_hide();inventory_open(snapshot.permissions,snapshot.light);return;
@@ -454,10 +472,10 @@ void render(lv_timer_t*) {
     if(next.serial==rendered_serial)return;
     if(next.page==Page::Session && next.authenticated){
         lv_obj_add_flag(panel,LV_OBJ_FLAG_HIDDEN);lv_obj_add_flag(home_button,LV_OBJ_FLAG_HIDDEN);
-        if(!browsing_products&&!browsing_contacts&&!browsing_sales&&!browsing_inventory)dashboard_show(next.identity,next.permissions,next.light,next.busy || strcmp(next.message,next.identity)==0?"":next.message);
+        if(!browsing_products&&!browsing_contacts&&!browsing_sales&&!browsing_inventory&&!browsing_cash)dashboard_show(next.identity,next.permissions,next.light,next.busy || strcmp(next.message,next.identity)==0?"":next.message);
         rendered=next.page;rendered_serial=next.serial;return;
     }
-    browsing_products=false;browsing_contacts=false;browsing_sales=false;browsing_inventory=false;inventory_hide();sales_hide(true);products_hide();contacts_hide();dashboard_hide();lv_obj_remove_flag(panel,LV_OBJ_FLAG_HIDDEN);
+    browsing_products=false;browsing_contacts=false;browsing_sales=false;browsing_inventory=false;browsing_cash=false;cash_hide();inventory_hide();sales_hide(true);products_hide();contacts_hide();dashboard_hide();lv_obj_remove_flag(panel,LV_OBJ_FLAG_HIDDEN);
     if(next.authenticated){lv_obj_remove_flag(home_button,LV_OBJ_FLAG_HIDDEN);}
     else lv_obj_add_flag(home_button,LV_OBJ_FLAG_HIDDEN);
     lv_group_set_default(input_group);
@@ -515,6 +533,7 @@ void authentication_start(lv_display_t* display,bool sd_writable){
     contacts_create(display,products_home);
     sales_create(display,products_home);
     inventory_create(display,products_home);
+    cash_create(display,products_home);
     lv_timer_create(render,100,nullptr);
     auto style_button=[](lv_obj_t* button){lv_obj_set_style_bg_color(button,lv_color_hex(0x334155),LV_PART_MAIN);lv_obj_set_style_bg_color(button,lv_color_hex(0x475569),LV_PART_MAIN|LV_STATE_PRESSED);lv_obj_set_style_text_color(button,lv_color_hex(0xf8fafc),LV_PART_MAIN);auto* text=lv_obj_get_child(button,0);lv_obj_set_style_text_color(text,lv_color_hex(0xf8fafc),0);lv_obj_center(text);};
     for(auto* button:buttons)style_button(button);

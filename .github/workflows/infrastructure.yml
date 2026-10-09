@@ -42,6 +42,12 @@ jobs:
             -e CI=true \
             -v "$PWD/tools/test_inventory_mariadb.py:/run/test/inventory.py:ro" \
             api python /run/test/inventory.py
+      - name: Caixa e financeiro concorrentes no MariaDB real
+        run: |
+          docker compose --env-file docker/.env -f docker/compose.yaml run --rm -T --no-deps \
+            -e CI=true \
+            -v "$PWD/tools/test_finance_mariadb.py:/run/test/finance.py:ro" \
+            api python /run/test/finance.py
       - name: Testar persistência e backup restaurado
         env:
           SKIP_PUBLIC_HTTPS: "1"

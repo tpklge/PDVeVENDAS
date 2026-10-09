@@ -155,6 +155,9 @@ def finish(body:Finish,user:Create,current:Current,db:Db,request:Request):
             before=before,after=product.stock,reason='Saída por venda'))
     for payment in body.payments:db.add(SalePayment(sale_id=sale.id,method=payment.method,amount=payment.amount))
     db.add(SaleRequest(user_id=user.id,device_id=device,idempotency_key=body.idempotency_key,state='completed',sale_id=sale.id))
+    db.flush();db.refresh(sale)
+    from .finance import ledger_sale
+    ledger_sale(db,sale,user,device)
     state.revision+=1
     record(db,request,user,'sales.create','sales',sale.id)
     db.commit()
@@ -191,7 +194,7 @@ def detail(identity:int,user:Read,db:Db):
     return serialize(sale)
 
 @router.post('/{identity}/cancel')
-def cancel(identity:int,body:Cancellation,user:Cancel,db:Db,request:Request):
+def cancel(identity:int,body:Cancellation,user:Cancel,current:Current,db:Db,request:Request):
     state=lock_catalog(db)
     sale=db.scalar(select(Sale).where(Sale.id==identity).with_for_update())
     if not sale:raise HTTPException(404,'Venda não encontrada.')
@@ -205,6 +208,8 @@ def cancel(identity:int,body:Cancellation,user:Cancel,db:Db,request:Request):
             before=before,after=product.stock,reason=body.reason))
     sale.status='canceled';sale.canceled_by=user.id;sale.canceled_at=utcnow();sale.cancel_reason=body.reason
     for payment in sale.payments:payment.status='managerial_reversal'
+    from .finance import ledger_cancel
+    ledger_cancel(db,sale,user,current[0].device_id,body.reason)
     state.revision+=1
     record(db,request,user,'sales.cancel','sales',sale.id)
     db.commit();db.refresh(sale)

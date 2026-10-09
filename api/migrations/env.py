@@ -1,6 +1,7 @@
 from alembic import context
 from sqlalchemy import create_engine
 from app.config import database_url
+from app import finance_models
 from app.models import Base
 
 if context.is_offline_mode():

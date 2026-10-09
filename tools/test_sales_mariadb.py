@@ -19,6 +19,7 @@ def call(method,path,body=None,token=None):
         return response.status,json.loads(raw) if raw else None
 
 token=call('POST','/api/v1/auth/login',{'username':'admin','password':'ci-isolated-only-password','device_id':'ci-sales'})[1]['access_token']
+assert call('POST','/api/v1/finance/cash/open',{'amount':'100','reason':'Fundo inicial CI','idempotency_key':'ci-open-cash-test_sales_mariadb'},token)[0]==201
 def create(sku,stock):
     code,row=call('POST','/api/v1/products',{'sku':sku,'name':'Produto vendas CI','sale_price':'190','stock':stock},token)
     assert code==201
