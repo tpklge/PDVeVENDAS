@@ -67,7 +67,7 @@ jobs:
       - name: Revogação e autenticação concorrentes no MariaDB real
         run: |
           docker compose --env-file docker/.env -f docker/compose.yaml run --rm -T --no-deps \
-            -e CI=true \
+            -e CI=true -e PYTHONPATH=/app \
             -v "$PWD/tools/test_security_mariadb.py:/run/test/security.py:ro" \
             api python /run/test/security.py
       - name: Auditar dependências fixadas e hashes
