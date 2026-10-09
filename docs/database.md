@@ -3,7 +3,7 @@
 MariaDB 11.8.8/InnoDB/utf8mb4, UTC, Numeric/Decimal para dinheiro, chaves
 estrangeiras e índices. Cliente acessa somente API HTTPS; MariaDB sem porta pública.
 Usuários SQL de aplicação (CRUD) e migração (DDL) separados; sem administração global.
-Migrações Alembic incrementais até 006_cash. SQL equivalentes em database/migrations.
+Migrações Alembic incrementais até 007_reports. SQL equivalentes em database/migrations.
 Não reimportar schema.sql em instalações existentes nem apagar volumes para atualizar.
 
 Autenticação: users, roles, permissions, sessions e auditoria; produtos/categorias e
@@ -22,3 +22,6 @@ MariaDB usam READ COMMITTED. Saldo/ledger/auditoria/resultado na mesma transaç�
 Procedimentos reais de backup/restauração em docker/scripts; atualizações de módulo
 fazem backup antes da migração. CI testa MariaDB AMD64/ARM64 com concorrência e
 restauração isolada. Ver [regras e atualização 0.9](releases/v0.9.0.md).
+
+007_reports acrescenta somente índices de período, sem reescrever dados ou snapshots.
+Relatórios usam agregações/janelas SQL e revisão para proteger a paginação.

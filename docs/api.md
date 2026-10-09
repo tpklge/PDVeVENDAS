@@ -1,6 +1,6 @@
-# API TAB5 ERP 0.9.0
+# API TAB5 ERP 0.10.0
 
-FastAPI, JSON UTF-8, /api/v1, schema esperado 006_cash. HTTPS via Traefik.
+FastAPI, JSON UTF-8, /api/v1, schema esperado 007_reports. HTTPS via Traefik.
 Autenticação opaca, refresh rotativo, revogação, RBAC e senha ERP mínimo 8 caracteres.
 Capabilities auth, rbac, products, catalog_snapshot, customers, suppliers, sales,
 declared_payments, inventory, cash, finance. OpenAPI gerado pela aplicação.
@@ -17,3 +17,6 @@ não são recebíveis gerados automaticamente de pagamentos já declarados de ve
 Operações financeiras possuem chaves idempotentes e resolução contra envio tardio.
 Listagens de caixa/contas usam limit máximo 25, after_id e next_id; Tab5 usa 8.
 Consultar a release correspondente para permissões, campos e migração.
+
+Relatórios: GET /api/v1/reports/{kind}. Período Cuiabá, filtros opcionais, agregações
+SQL, páginas com revisão e valores financeiros protegidos. Ver [0.10](releases/v0.10.0.md).

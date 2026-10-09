@@ -6,6 +6,7 @@
 #include "sales.hpp"
 #include "inventory.hpp"
 #include "cash.hpp"
+#include "reports.hpp"
 #include <sys/stat.h>
 #include "sdkconfig.h"
 
@@ -76,6 +77,7 @@ bool browsing_contacts=false;
 bool browsing_sales=false;
 bool browsing_inventory=false;
 bool browsing_cash=false;
+bool browsing_reports=false;
 esp_netif_t* netif=nullptr;
 String access, refresh_token;
 char device_id[32]{};
@@ -322,6 +324,7 @@ void worker(void*) {
             char permissions[2048];xSemaphoreTake(view_lock,portMAX_DELAY);snprintf(permissions,sizeof(permissions),"%s",view.permissions);xSemaphoreGive(view_lock);
             if(products_handle_next(permissions,settings.api,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport))continue;
             if(contacts_handle_next(permissions,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport))continue;
+            if(reports_handle_next(permissions,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport))continue;
             if(cash_handle_next(permissions,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport,finance_journal))continue;
             if(inventory_handle_next(permissions,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport,inventory_journal))continue;
             if(sales_handle_next(permissions,(xEventGroupGetBits(wifi_events)&1)!=0,product_transport,sale_journal))continue;
@@ -439,8 +442,12 @@ void pressed(lv_event_t* e){
     wipe(&cmd,sizeof(cmd));
 }
 void navigate_to(lv_event_t* e){auto target=static_cast<Page>(reinterpret_cast<uintptr_t>(lv_event_get_user_data(e)));publish(target,"Preencha os campos para continuar.");}
-void products_home(){browsing_cash=false;browsing_inventory=false;browsing_sales=false;browsing_contacts=false;browsing_products=false;publish(Page::Session,"Menu principal.");}
+void products_home(){browsing_reports=false;browsing_cash=false;browsing_inventory=false;browsing_sales=false;browsing_contacts=false;browsing_products=false;publish(Page::Session,"Menu principal.");}
 void dashboard_action(DashboardAction action){
+    if(action==DashboardAction::Reports){
+        static View snapshot;xSemaphoreTake(view_lock,portMAX_DELAY);snapshot=view;xSemaphoreGive(view_lock);
+        browsing_reports=true;dashboard_hide();reports_open(snapshot.permissions,snapshot.light);return;
+    }
     if(action==DashboardAction::Cash){
         static View snapshot;xSemaphoreTake(view_lock,portMAX_DELAY);snapshot=view;xSemaphoreGive(view_lock);
         browsing_cash=true;dashboard_hide();cash_open(snapshot.permissions,snapshot.light);return;
@@ -472,10 +479,10 @@ void render(lv_timer_t*) {
     if(next.serial==rendered_serial)return;
     if(next.page==Page::Session && next.authenticated){
         lv_obj_add_flag(panel,LV_OBJ_FLAG_HIDDEN);lv_obj_add_flag(home_button,LV_OBJ_FLAG_HIDDEN);
-        if(!browsing_products&&!browsing_contacts&&!browsing_sales&&!browsing_inventory&&!browsing_cash)dashboard_show(next.identity,next.permissions,next.light,next.busy || strcmp(next.message,next.identity)==0?"":next.message);
+        if(!browsing_products&&!browsing_contacts&&!browsing_sales&&!browsing_inventory&&!browsing_cash&&!browsing_reports)dashboard_show(next.identity,next.permissions,next.light,next.busy || strcmp(next.message,next.identity)==0?"":next.message);
         rendered=next.page;rendered_serial=next.serial;return;
     }
-    browsing_products=false;browsing_contacts=false;browsing_sales=false;browsing_inventory=false;browsing_cash=false;cash_hide();inventory_hide();sales_hide(true);products_hide();contacts_hide();dashboard_hide();lv_obj_remove_flag(panel,LV_OBJ_FLAG_HIDDEN);
+    browsing_products=false;browsing_contacts=false;browsing_sales=false;browsing_inventory=false;browsing_cash=false;browsing_reports=false;reports_hide();cash_hide();inventory_hide();sales_hide(true);products_hide();contacts_hide();dashboard_hide();lv_obj_remove_flag(panel,LV_OBJ_FLAG_HIDDEN);
     if(next.authenticated){lv_obj_remove_flag(home_button,LV_OBJ_FLAG_HIDDEN);}
     else lv_obj_add_flag(home_button,LV_OBJ_FLAG_HIDDEN);
     lv_group_set_default(input_group);
@@ -534,6 +541,7 @@ void authentication_start(lv_display_t* display,bool sd_writable){
     sales_create(display,products_home);
     inventory_create(display,products_home);
     cash_create(display,products_home);
+    reports_create(display,products_home);
     lv_timer_create(render,100,nullptr);
     auto style_button=[](lv_obj_t* button){lv_obj_set_style_bg_color(button,lv_color_hex(0x334155),LV_PART_MAIN);lv_obj_set_style_bg_color(button,lv_color_hex(0x475569),LV_PART_MAIN|LV_STATE_PRESSED);lv_obj_set_style_text_color(button,lv_color_hex(0xf8fafc),LV_PART_MAIN);auto* text=lv_obj_get_child(button,0);lv_obj_set_style_text_color(text,lv_color_hex(0xf8fafc),0);lv_obj_center(text);};
     for(auto* button:buttons)style_button(button);

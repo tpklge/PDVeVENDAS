@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 from sqlalchemy import URL
 
-VERSION = "0.9.0"
-SCHEMA_REVISION = "006_cash"
+VERSION = "0.10.0"
+SCHEMA_REVISION = "007_reports"
 
 def database_url():
     if os.getenv("DATABASE_URL"):

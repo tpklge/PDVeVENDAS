@@ -3,12 +3,12 @@
 ERP comercial e PDV nativo para M5Stack Tab5, em desenvolvimento incremental.
 Especificação integral: [docs/REQUISITOS_RECEBIDOS.md](docs/REQUISITOS_RECEBIDOS.md).
 
-A etapa **v0.9.0 — caixa e financeiro** está implementada na branch
-`release/v0.9.0-cash`, com abertura, duas vendas e fechamento validados no Tab5. Inclui sangria,
-suprimento, fechamento, histórico, contas e baixas parciais. Otimiza as pausas do
-PIN sem mudar a criptografia ou a conexão. Ver [instalação e operação](docs/releases/v0.9.0.md).
-A API 0.9 exige abrir o caixa no Tab5 antes de concluir novas vendas.
-O usuário aprovou os testes de estoque 0.8.0 e percebeu desbloqueio mais rápido na 0.9.0.
+A etapa **v0.10.0 — relatórios** está implementada em `release/v0.10.0-reports`,
+aguardando validação física. Vendas, vendedor, produtos, formas, cancelamentos,
+estoque, caixa e contas; filtros por período e totais na API. Ver
+[implantação e operação](docs/releases/v0.10.0.md).
+O usuário confirmou abertura, duas vendas e fechamento de caixa na 0.9.0,
+e percebeu desbloqueio mais rápido. API exige caixa aberto para novas vendas.
 O firmware tem primeiro boot, desbloqueio local, configuração criptografada,
 Wi-Fi e login ERP. O usuário validou cadastro, consulta, persistência após reinício,
 edição, desativação/reativação e filtros. Ver [validação de produtos](docs/releases/v0.5.0.md).

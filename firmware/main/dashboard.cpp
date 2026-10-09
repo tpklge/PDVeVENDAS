@@ -22,7 +22,7 @@ char session_identity[1536]{};
 void home(){
     lv_label_set_text(title,"Visão geral");
     lv_label_set_text(body,"Bem-vindo ao TAB5 ERP\n\nEscolha um módulo no menu lateral.\n\n"
-        "Produtos, clientes, fornecedores e PDV disponíveis. Estoque, caixa e financeiro disponíveis. Relatórios em preparação.\n\n"
+        "Produtos, clientes, fornecedores e PDV disponíveis. Estoque, caixa e financeiro disponíveis. Relatórios disponíveis.\n\n"
         "Sua conexão e sessão podem ser acompanhadas nesta tela.\n"
         "Catálogo de produtos: atualize o cache dentro do módulo Produtos.\n\n"
         "Teclado: Tab / Shift+Tab navegam; Enter seleciona; Esc volta ao início.");
@@ -36,6 +36,7 @@ void key_event(lv_event_t* event){
 void module_event(lv_event_t* event){
     unsigned index=static_cast<unsigned>(reinterpret_cast<uintptr_t>(lv_event_get_user_data(event)));
     if(!index){home();return;}
+    if(index==6 && allowed[index]){callback(DashboardAction::Reports);return;}
     if(index==5 && allowed[index]){callback(DashboardAction::Cash);return;}
     if(index==4 && allowed[index]){callback(DashboardAction::Inventory);return;}
     if(index==3 && allowed[index]){callback(DashboardAction::Sales);return;}
@@ -83,7 +84,7 @@ void dashboard_create(lv_display_t* display,DashboardCallback cb){
     const char* actions[]={"Rede / servidor","Senha ERP","Trocar tema","Bloquear","Sair"};
     const DashboardAction codes[]={DashboardAction::Network,DashboardAction::Password,DashboardAction::Theme,DashboardAction::Lock,DashboardAction::Logout};
     for(unsigned i=0;i<5;++i){auto* obj=button(root,actions[i],12+i*244,588,230);lv_obj_add_event_cb(obj,action_event,LV_EVENT_CLICKED,reinterpret_cast<void*>(static_cast<uintptr_t>(codes[i])));}
-    auto* hint=lv_label_create(root);lv_obj_set_pos(hint,12,656);lv_label_set_text(hint,"TAB5 ERP v0.9.0 | Configurações no microSD | pt-BR");
+    auto* hint=lv_label_create(root);lv_obj_set_pos(hint,12,656);lv_label_set_text(hint,"TAB5 ERP v0.10.0 | Configurações no microSD | pt-BR");
     home();apply_theme(false);lv_obj_add_flag(root,LV_OBJ_FLAG_HIDDEN);
 }
 void dashboard_show(const char* identity,const char* permissions,bool light,const char* notice){

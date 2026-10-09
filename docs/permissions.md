@@ -19,3 +19,7 @@ financeiro/sangria/suprimento. Consulta padrão não acessa caixa ou financeiro.
 
 Não são concedidas permissões novas automaticamente na 0.9; 32 códigos existentes.
 Ver [regras de caixa e contas](releases/v0.9.0.md).
+
+0.10: reports.read em todos os relatórios; reports.financial adicional para valores
+de vendas/pagamentos/cancelamentos/caixa/contas. Consulta acessa estoque e movimentos
+sem preços. Não modificar papéis existentes automaticamente.

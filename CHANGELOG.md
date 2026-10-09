@@ -1,5 +1,14 @@
 # Histórico
 
+## 0.10.0 — relatórios implementados; validação física pendente
+
+- Doze relatórios nativos, filtros por período/IDs, totais SQL e paginação por revisão.
+- Fuso Cuiabá, dinheiro líquido de troco, cancelamentos e rateio exato de descontos.
+- Estoque por unidade, histórico, caixa fechado imutável e contas por vencimento.
+- RBAC adicional para valores financeiros; nenhum documento pessoal em relatórios.
+- Migração 007_reports acrescenta apenas índices; atualização com backup.
+- 45 testes API e build ESP32-P4 aprovados localmente.
+
 ## 0.9.0 — fluxo básico de caixa validado no Tab5
 
 - Usuário confirmou abertura de caixa, duas vendas e encerramento em 09/10/2026.
