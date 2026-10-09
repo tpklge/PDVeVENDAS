@@ -16,7 +16,10 @@ extern "C" void app_main() {
     display_config.lvgl_port_cfg.task_stack=16384;
     display_config.buffer_size=BSP_LCD_H_RES*CONFIG_BSP_LCD_DRAW_BUF_HEIGHT;
     display_config.double_buffer=CONFIG_BSP_LCD_DRAW_BUF_DOUBLE;
-    display_config.flags.buff_dma=true;display_config.flags.buff_spiram=false;display_config.flags.sw_rotate=true;
+    // ESP32-P4 supports DMA in PSRAM. Keep drawing/rotation buffers there
+    // so SDIO and TLS retain enough internal RAM after Wi-Fi connects.
+    static_assert(SOC_PSRAM_DMA_CAPABLE, "Display buffers require PSRAM DMA support");
+    display_config.flags.buff_dma=true;display_config.flags.buff_spiram=true;display_config.flags.sw_rotate=true;
     lv_display_t* display = bsp_display_start_with_config(&display_config);
     if (!display) { ESP_LOGE("tab5_erp", "Falha ao inicializar display"); return; }
     bsp_display_rotate(display, LV_DISPLAY_ROTATION_90);
@@ -44,6 +47,9 @@ extern "C" void app_main() {
         lv_mem_monitor_t ui_memory{};
         lv_mem_monitor(&ui_memory);
         ESP_LOGI("tab5_erp", "LVGL: %u bytes livres após criar a interface", unsigned(ui_memory.free_size));
+        ESP_LOGI("tab5_erp", "DMA interna: livres %u bytes, maior bloco %u bytes",
+                 unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA)),
+                 unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA)));
         bsp_display_unlock();
     } else {
         ESP_LOGE("tab5_erp", "Não foi possível criar a interface");
