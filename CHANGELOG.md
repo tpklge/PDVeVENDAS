@@ -1,7 +1,9 @@
 # Histórico
 
-## 0.9.0 — caixa e financeiro implementados; validação física pendente
+## 0.9.0 — fluxo básico de caixa validado no Tab5
 
+- Usuário confirmou abertura de caixa, duas vendas e encerramento em 09/10/2026.
+- Usuário percebeu desbloqueio mais rápido; tempo não medido.
 - Desbloqueio: pausas por tempo, mantendo PBKDF2 200.000 e arquivos existentes.
 - Wi-Fi e verificações da API preservados; desbloqueio permite recuperar pendências.
 - Abertura por operador/terminal, sangria, suprimento, fechamento e histórico.

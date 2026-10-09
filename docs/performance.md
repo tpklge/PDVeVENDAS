@@ -20,3 +20,6 @@ Wi-Fi/NTP/HTTPS permanecem iguais. A métrica cobre o cálculo da chave, não a
 conexão posterior. Ganho real ainda não medido no Tab5; comparar desbloqueios
 com mesmo cartão e condições equivalentes antes/depois, incluindo interação
 com teclado/touch durante a espera.
+
+Em 09/10/2026, o usuário relatou que o desbloqueio pareceu mais rápido após o OTA
+0.9.0. Evidência qualitativa; não foi informado tempo medido nem percentual de ganho.
