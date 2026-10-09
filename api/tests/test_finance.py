@@ -103,6 +103,15 @@ def test_cash_permissions_device_scope_validation_and_retry_barrier(environment)
     ok={**body,'kind':'deposit','amount':'1','idempotency_key':'completed-finance-key-001'}
     result=client.post(P+'/cash/movements',headers=auth,json=ok).json()
     assert client.post(P+'/requests/'+ok['idempotency_key']+'/resolve',headers=auth).json()['result']['id']==result['id']
+    # Role revocation must also protect financial results recovered by key.
+    _,account_body=account(client,auth)
+    from app.models import User, Role, Permission
+    with factory.begin() as db:
+        limited=Role(name='Caixa limitado',permissions=[db.scalar(select(Permission).where(Permission.code=='cash.open'))])
+        db.add(limited)
+        db.scalar(select(User).where(User.username=='admin')).roles=[limited]
+    assert client.post(P+'/requests/'+account_body['idempotency_key']+'/resolve',headers=auth).status_code==403
+    assert client.post(P+'/requests/'+ok['idempotency_key']+'/resolve',headers=auth).status_code==200
 
 def test_finance_atomic_rollback_on_audit_failure(environment,monkeypatch):
     client,factory,auth,session,_=setup(environment)

@@ -10,6 +10,8 @@
 - Recuperação financeira criptografada no microSD e barreira contra envio tardio.
 - Migração aditiva 006_cash; backup antes de atualizar, sem alterar credenciais.
 - Usuário aprovou os testes de estoque 0.8.0.
+- 39 testes de API; MariaDB AMD64/ARM64, concorrência e backup aprovados no CI.
+- Build ESP32-P4 e testes portáteis aprovados localmente e no CI.
 
 ## 0.8.0 — estoque validado no Tab5
 
