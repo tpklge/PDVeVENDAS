@@ -36,6 +36,12 @@ jobs:
             -e CI=true \
             -v "$PWD/tools/test_sales_mariadb.py:/run/test/sales.py:ro" \
             api python /run/test/sales.py
+      - name: Estoque e concorrência com vendas no MariaDB real
+        run: |
+          docker compose --env-file docker/.env -f docker/compose.yaml run --rm -T --no-deps \
+            -e CI=true \
+            -v "$PWD/tools/test_inventory_mariadb.py:/run/test/inventory.py:ro" \
+            api python /run/test/inventory.py
       - name: Testar persistência e backup restaurado
         env:
           SKIP_PUBLIC_HTTPS: "1"

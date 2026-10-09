@@ -11,7 +11,7 @@ from .db import get_db
 from .models import AuditLog, AuthAudit, Permission, Role, Session, User, utcnow
 from .security import DUMMY_HASH, digest, hasher, issue_session, verify
 
-app = FastAPI(title="TAB5 ERP", version=VERSION, description="Gestão de produtos e autenticação. PDV ainda indisponível.")
+app = FastAPI(title="TAB5 ERP", version=VERSION, description="Gestão comercial, PDV e movimentações de estoque.")
 from .dependencies import Db, Input, Current, allowed
 
 
@@ -39,7 +39,7 @@ async def validation_error(request, exc):
     labels = {"sku": "SKU", "barcode": "GTIN/EAN e dígito verificador", "name": "Nome", "category": "Categoria",
         "sale_price": "Preço de venda (até 2 casas)", "cost_price": "Preço de custo (até 2 casas)",
         "stock": "Estoque (até 3 casas)", "stock_min": "Estoque mínimo", "stock_max": "Estoque máximo",
-        "ncm": "NCM (8 dígitos)", "cest": "CEST (7 dígitos)", "origin": "Origem (0 a 8)", "document": "CPF/CNPJ (tipo e dígitos verificadores)", "person_type": "Tipo PF/PJ", "email": "E-mail", "state": "UF", "postal_code": "CEP (8 dígitos, hífen opcional)", "address": "Endereço", "city": "Cidade", "notes": "Observações", "quantity": "Quantidade (até 3 casas)", "items": "Itens do carrinho", "discount_amount": "Desconto em valor", "discount_percent": "Desconto percentual", "payments": "Pagamentos", "amount": "Valor do pagamento", "method": "Forma de pagamento", "reason": "Justificativa", "idempotency_key": "Identificador da tentativa", "expected_unit_price": "Preço unitário", "product_version": "Versão do produto"}
+        "ncm": "NCM (8 dígitos)", "cest": "CEST (7 dígitos)", "origin": "Origem (0 a 8)", "document": "CPF/CNPJ (tipo e dígitos verificadores)", "person_type": "Tipo PF/PJ", "email": "E-mail", "state": "UF", "postal_code": "CEP (8 dígitos, hífen opcional)", "address": "Endereço", "city": "Cidade", "notes": "Observações", "quantity": "Quantidade (até 3 casas)", "items": "Itens do carrinho", "discount_amount": "Desconto em valor", "discount_percent": "Desconto percentual", "payments": "Pagamentos", "amount": "Valor do pagamento", "method": "Forma de pagamento", "reason": "Justificativa", "idempotency_key": "Identificador da tentativa", "expected_unit_price": "Preço unitário", "product_version": "Versão do produto", "target_quantity": "Saldo contado (até 3 casas)", "kind": "Tipo de movimentação"}
     names = sorted({labels.get(str(error["loc"][-1]), "campos informados") for error in exc.errors()})
     return error_response(request, 422, "VALIDATION_ERROR", "Verifique: " + ", ".join(names) + ".")
 
@@ -88,7 +88,7 @@ def ready(db: Db):
 
 @app.get("/api/v1/system/status")
 def status():
-    return {"version": VERSION, "api_version": "v1", "capabilities": ["auth", "rbac", "products", "catalog_snapshot", "customers", "suppliers", "sales", "declared_payments"], "commercial_operations": True}
+    return {"version": VERSION, "api_version": "v1", "capabilities": ["auth", "rbac", "products", "catalog_snapshot", "customers", "suppliers", "sales", "declared_payments", "inventory"], "commercial_operations": True}
 
 
 @app.post("/api/v1/auth/login")
@@ -186,5 +186,7 @@ app.include_router(products_router)
 from .contacts import router as contacts_router
 app.include_router(contacts_router)
 
+from .inventory import router as inventory_router
 from .sales import router as sales_router
 app.include_router(sales_router)
+app.include_router(inventory_router)

@@ -3,8 +3,11 @@
 ERP comercial e PDV nativo para M5Stack Tab5, em desenvolvimento incremental.
 Especificação integral: [docs/REQUISITOS_RECEBIDOS.md](docs/REQUISITOS_RECEBIDOS.md).
 
-A etapa atual é **v0.7.1 — fechamento de vendas mais claro**, na branch
-`release/v0.7.1-sales-flow`. Ver [implantação e operação](docs/releases/v0.7.0.md). Ver [provisionamento/testes](docs/authentication.md).
+A etapa **v0.8.0 — estoque** foi iniciada na branch `release/v0.8.0-inventory`.
+A base da API está implementada; tela nativa e implantação ainda pendentes.
+O OTA disponível nesta rodada é **v0.7.1**, com o fechamento de vendas mais claro,
+compatível com a API 0.7.0 instalada. Ver [estoque](docs/releases/v0.8.0.md) e
+[fluxo de vendas](docs/releases/v0.7.1.md).
 O firmware tem primeiro boot, desbloqueio local, configuração criptografada,
 Wi-Fi e login ERP. O usuário validou cadastro, consulta, persistência após reinício,
 edição, desativação/reativação e filtros. Ver [validação de produtos](docs/releases/v0.5.0.md).

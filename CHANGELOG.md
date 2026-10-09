@@ -1,5 +1,12 @@
 # Histórico
 
+## 0.8.0 — estoque: implementação iniciada
+
+- API de saldo, estoque mínimo e histórico de movimentos.
+- Entradas, saídas e ajustes justificados, com versão e idempotência.
+- Movimentos, saldo e auditoria transacionais; bloqueios compartilhados com vendas.
+- Tela de estoque e implantação 0.8.0 ainda pendentes.
+
 ## 0.7.1 — fechamento de venda mais claro
 
 - Revisar e cobrar → Confirmar pagamento e concluir → Venda concluída.

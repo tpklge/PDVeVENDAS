@@ -222,3 +222,15 @@ class SaleRequest(Base):
     state: Mapped[str] = mapped_column(String(16))
     sale_id: Mapped[int | None] = mapped_column(ForeignKey("sales.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class InventoryRequest(Base):
+    __tablename__ = "inventory_requests"
+    __table_args__ = (UniqueConstraint("user_id", "device_id", "idempotency_key", name="uq_inventory_request"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    device_id: Mapped[str] = mapped_column(String(80))
+    idempotency_key: Mapped[str] = mapped_column(String(64))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    movement_id: Mapped[int] = mapped_column(ForeignKey("stock_movements.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

@@ -3,7 +3,7 @@ x-api: &api
   build:
     context: ..
     dockerfile: docker/api.Dockerfile
-  image: tab5-erp-api:0.7.1
+  image: tab5-erp-api:0.8.0
   restart: unless-stopped
   networks: [backend]
   security_opt: ["no-new-privileges:true"]
